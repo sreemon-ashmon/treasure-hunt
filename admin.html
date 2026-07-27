@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Dispatch — Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161f1a; --ink-2:#1f2b23; --paper:#e9e3d0; --paper-dim:#9aa79c;
+    --amber:#e8a33d; --rust:#b8492f; --moss-line: rgba(233,227,208,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--ink); color:var(--paper);
+    font-family:'Inter',sans-serif; padding:28px 20px 60px;
+  }
+  .wrap{max-width:960px; margin:0 auto;}
+  h1{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:24px;
+    margin:0 0 4px;
+  }
+  .sub{ color:var(--paper-dim); font-size:13px; margin-bottom:24px; font-family:'IBM Plex Mono',monospace;}
+  table{ width:100%; border-collapse:collapse; }
+  th{
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--amber);
+    padding:0 12px 10px; border-bottom:1px solid var(--moss-line);
+  }
+  td{
+    padding:12px; border-bottom:1px solid var(--moss-line);
+    font-size:14px; vertical-align:middle;
+  }
+  tr:hover td{ background:rgba(233,227,208,0.03); }
+  .team-name{ font-family:'Space Grotesk',sans-serif; font-weight:700; }
+  .pill{
+    display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    padding:3px 9px; border-radius:100px; border:1px solid var(--moss-line);
+  }
+  .pill.finished{ color:var(--ink); background:var(--amber); border-color:var(--amber); }
+  .pill.progress{ color:var(--paper-dim); }
+  .pill.notstarted{ color:var(--paper-dim); opacity:.6; }
+  .bar-track{
+    width:140px; height:6px; background:var(--ink-2); border-radius:4px; overflow:hidden;
+    border:1px solid var(--moss-line);
+  }
+  .bar-fill{ height:100%; background:var(--amber); }
+  .mono{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--paper-dim); }
+  .empty{ text-align:center; padding:60px 0; color:var(--paper-dim); font-family:'IBM Plex Mono',monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Base Camp Dashboard</h1>
+  <div class="sub" id="statusLine">Connecting…</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Team</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Started</th>
+        <th>Finished</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ====================== PASTE YOUR FIREBASE CONFIG BELOW ====================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAlzMMxIAWr1jlsGWg7srtPoiVXa1d_8xQ",
+  authDomain: "treasure-hunt-57dd0.firebaseapp.com",
+  projectId: "treasure-hunt-57dd0",
+  storageBucket: "treasure-hunt-57dd0.firebasestorage.app",
+  messagingSenderId: "947154489364",
+  appId: "1:947154489364:web:1b282412e7bfc7b0199701"
+};
+/* ================================================================================ */
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const rows = document.getElementById('rows');
+const statusLine = document.getElementById('statusLine');
+
+function fmtTime(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+db.ref('teams').on('value', snap => {
+  const teams = snap.val() || {};
+  const ids = Object.keys(teams).sort();
+  statusLine.textContent = `Live · ${ids.length} team${ids.length === 1 ? '' : 's'} · updates automatically`;
+
+  if(ids.length === 0){
+    rows.innerHTML = `<tr><td colspan="5"><div class="empty">No teams seeded yet.</div></td></tr>`;
+    return;
+  }
+
+  rows.innerHTML = ids.map(id => {
+    const t = teams[id];
+    const total = (t.order || []).length || 1;
+    const done = Math.min(t.currentIndex || 0, total);
+    const pct = Math.round((done / total) * 100);
+    let pillHtml;
+    if(t.finishedAt){
+      pillHtml = `<span class="pill finished">Finished</span>`;
+    } else if(t.startedAt){
+      pillHtml = `<span class="pill progress">In progress</span>`;
+    } else {
+      pillHtml = `<span class="pill notstarted">Not started</span>`;
+    }
+    return `
+      <tr>
+        <td><div class="team-name">${(t.name || id)}</div><div class="mono">${id}</div></td>
+        <td>${pillHtml}</td>
+        <td>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div class="mono">${done} / ${total}</div>
+        </td>
+        <td class="mono">${fmtTime(t.startedAt)}</td>
+        <td class="mono">${fmtTime(t.finishedAt)}</td>
+      </tr>
+    `;
+  }).join('');
+});
+</script>
+</body>
+</html>
