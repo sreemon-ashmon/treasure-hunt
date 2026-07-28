@@ -2,113 +2,49 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Field Dispatch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Field Dispatch — Treasure Hunt</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --ink:#161f1a; --ink-2:#1f2b23; --paper:#e9e3d0; --paper-dim:#cfc7ab;
-    --amber:#e8a33d; --rust:#b8492f; --moss:#5c7a67; --moss-line: rgba(233,227,208,0.14);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background: radial-gradient(circle at 15% -10%, rgba(232,163,61,0.10), transparent 45%), var(--ink);
-    color:var(--paper); font-family:'Inter',sans-serif; min-height:100vh;
-    display:flex; align-items:center; justify-content:center; padding:24px;
-    transition: background-color .15s ease;
-  }
-  body.flash-red{ background-color:#b8492f; }
-  .frame{ width:100%; max-width:420px; }
-  .frame.dim{ opacity:0; pointer-events:none; }
-  .eyebrow{
-    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--amber); display:flex; align-items:center; gap:8px; margin-bottom:10px;
-  }
-  .eyebrow::before{ content:''; width:6px;height:6px;border-radius:50%; background:var(--amber); box-shadow:0 0 0 3px rgba(232,163,61,0.18); }
-  h1{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:26px; margin:0 0 4px; letter-spacing:-0.01em; }
-  .sub{ color:var(--paper-dim); font-size:14px; margin-bottom:22px; line-height:1.5; }
-  .card{
-    background:var(--ink-2); border:1px solid var(--moss-line); border-radius:14px;
-    padding:24px; position:relative; overflow:hidden;
-  }
-  .card::before{
-    content:''; position:absolute; top:0;left:0;right:0;height:3px;
-    background:repeating-linear-gradient(90deg,var(--amber) 0 10px, transparent 10px 20px); opacity:.55;
-  }
-  .name-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .name-btn{
-    background:var(--ink); border:1.5px solid var(--moss-line); color:var(--paper);
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
-    padding:16px 10px; border-radius:10px; cursor:pointer; text-transform:capitalize;
-    transition:border-color .15s, transform .1s;
-  }
-  .name-btn:hover{ border-color:var(--amber); }
-  .name-btn:active{ transform:scale(.97); }
-  .name-btn:disabled{ opacity:.4; cursor:default; }
-  button.primary{
-    width:100%; background:var(--amber); color:var(--ink); border:none;
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
-    padding:13px 14px; border-radius:8px; cursor:pointer; margin-top:16px;
-  }
-  .status-strip{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--paper-dim); }
-  .stamp{
-    display:inline-block; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px;
-    letter-spacing:.06em; text-transform:uppercase; color:var(--amber); border:2px solid var(--amber);
-    padding:4px 10px; border-radius:6px; transform:rotate(-3deg) scale(0.7); opacity:0; margin-bottom:16px;
-    animation:stampIn .35s cubic-bezier(.2,1.4,.4,1) .1s forwards;
-  }
-  @keyframes stampIn{ to{ transform:rotate(-3deg) scale(1); opacity:1; } }
-  .station-name{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; margin:0 0 14px; }
-  .clue-label{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin-bottom:8px; }
-  .clue-text{
-    background:var(--ink); border:1px solid var(--moss-line); border-left:3px solid var(--amber);
-    border-radius:6px; padding:14px 16px; font-size:15px; line-height:1.55; margin-bottom:18px; white-space:pre-wrap;
-  }
-  .site-link{
-    display:flex; align-items:center; justify-content:center; gap:8px; background:transparent;
-    border:1.5px solid var(--amber); color:var(--amber); text-decoration:none;
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; padding:12px 14px;
-    border-radius:8px; margin-bottom:18px;
-  }
-  .progress-line{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--paper-dim); text-align:center; }
-  .progress-line b{ color:var(--paper); }
-  .hidden{ display:none; }
-  .center-msg{ text-align:center; padding:20px 4px; }
-  .center-msg .big{ font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; margin-bottom:8px; }
-  .center-msg .small{ color:var(--paper-dim); font-size:13px; line-height:1.6; }
-  footer{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--moss); margin-top:18px; letter-spacing:.04em; }
+:root{--ink:#161f1a;--ink2:#1f2b23;--paper:#e9e3d0;--dim:#cfc7ab;--amber:#e8a33d;--rust:#b8492f;--line:rgba(233,227,208,.14)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 15% -10%,rgba(232,163,61,.1),transparent 45%),var(--ink);color:var(--paper);font-family:Inter,sans-serif;display:flex;justify-content:center;padding:24px;transition:.2s}
+body.flash{background:var(--rust)}
+.frame{width:100%;max-width:440px}.eyebrow{font:600 11px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.eyebrow:before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:8px;box-shadow:0 0 0 3px rgba(232,163,61,.18)}
+h1{font:700 27px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:14px;line-height:1.5;margin-bottom:22px}
+.card{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:24px;position:relative;overflow:hidden}
+.card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,var(--amber) 0 10px,transparent 10px 20px);opacity:.55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team{background:var(--ink);border:1.5px solid var(--line);color:var(--paper);font:700 15px 'Space Grotesk';padding:16px 10px;border-radius:10px;cursor:pointer;text-transform:capitalize}
+.team:hover{border-color:var(--amber)}.team:disabled{opacity:.45;cursor:default}
+.loading,.center{text-align:center;padding:22px 4px}.big{font:700 21px 'Space Grotesk';margin-bottom:8px}.small{color:var(--dim);font-size:13px;line-height:1.6}
+.stamp{display:inline-block;font:700 13px 'Space Grotesk';letter-spacing:.06em;text-transform:uppercase;color:var(--amber);border:2px solid var(--amber);padding:4px 10px;border-radius:6px;transform:rotate(-3deg);margin-bottom:16px}
+.station{font:700 23px 'Space Grotesk';margin-bottom:14px}.label{font:600 11px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.clue{background:var(--ink);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:6px;padding:14px 16px;font-size:15px;line-height:1.55;margin-bottom:18px;white-space:pre-wrap}
+.site{display:flex;justify-content:center;align-items:center;background:transparent;border:1.5px solid var(--amber);color:var(--amber);text-decoration:none;font:700 14px 'Space Grotesk';padding:12px;border-radius:8px;margin-bottom:18px}
+.progress{font:500 12px 'IBM Plex Mono';color:var(--dim);text-align:center}.progress b{color:var(--paper)}.hidden{display:none}
+footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
+.notice{background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.25);border-radius:8px;padding:12px;margin-top:14px;font-size:12px;line-height:1.5;color:var(--dim)}
 </style>
 </head>
 <body id="body">
-<div class="frame" id="frame">
-  <div class="eyebrow">Field Dispatch</div>
-  <h1 id="pageTitle">Check In</h1>
-  <div class="sub" id="pageSub">Scan a station's code to log your team's progress.</div>
-
-  <div class="card">
-    <!-- NAME SELECT VIEW (first scan only) -->
-    <div id="nameView" class="hidden">
-      <div class="name-grid" id="nameGrid"></div>
-    </div>
-
-    <!-- LOADING VIEW -->
-    <div id="loadingView" class="hidden center-msg">
-      <div class="big">Reading signal…</div>
-      <div class="small">Talking to base.</div>
-    </div>
-
-    <!-- RESULT VIEWS -->
-    <div id="resultView" class="hidden"></div>
-  </div>
-  <footer id="footerStrip"></footer>
+<div class="frame">
+<div class="eyebrow">Field Dispatch</div>
+<h1 id="title">Check In</h1>
+<div class="sub" id="sub">Select your department once. Your route will be assigned automatically.</div>
+<div class="card">
+<div id="teamView" class="hidden"><div class="grid" id="teamGrid"></div>
+<div class="notice">After selecting your team, you may close this page. Use the same phone to scan every station QR.</div></div>
+<div id="loadingView" class="hidden loading"><div class="big">Reading signal…</div><div class="small">Connecting to base and assigning your route.</div></div>
+<div id="resultView" class="hidden"></div>
+</div>
+<footer id="footer"></footer>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-/* ====================== PASTE YOUR FIREBASE CONFIG BELOW ====================== */
 const firebaseConfig = {
   apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
   authDomain: "treasure-hunt-fae61.firebaseapp.com",
@@ -118,240 +54,149 @@ const firebaseConfig = {
   messagingSenderId: "561518091730",
   appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
 };
-/* ================================================================================ */
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db=firebase.database();
+const params=new URLSearchParams(location.search);
+const stationParam=params.get('station');
 
-const params = new URLSearchParams(window.location.search);
-const stationParam = params.get('station'); // "start" | "finish" | "st1".."st10" | null
+const body=document.getElementById('body');
+const teamView=document.getElementById('teamView'), teamGrid=document.getElementById('teamGrid');
+const loadingView=document.getElementById('loadingView'), resultView=document.getElementById('resultView');
+const title=document.getElementById('title'), sub=document.getElementById('sub'), footer=document.getElementById('footer');
 
-const body = document.getElementById('body');
-const frame = document.getElementById('frame');
-const nameView = document.getElementById('nameView');
-const nameGrid = document.getElementById('nameGrid');
-const loadingView = document.getElementById('loadingView');
-const resultView = document.getElementById('resultView');
-const pageTitle = document.getElementById('pageTitle');
-const pageSub = document.getElementById('pageSub');
-const footerStrip = document.getElementById('footerStrip');
+function show(el){[teamView,loadingView,resultView].forEach(x=>x.classList.add('hidden'));el.classList.remove('hidden')}
+function savedTeam(){return localStorage.getItem('fieldDispatchTeam')}
+function saveTeam(id){localStorage.setItem('fieldDispatchTeam',id)}
 
-function showView(v){
-  [nameView, loadingView, resultView].forEach(el => el.classList.add('hidden'));
-  v.classList.remove('hidden');
+function message(big,small){
+  resultView.innerHTML=`<div class="center"><div class="big">${big}</div><div class="small">${small}</div></div>`;
+  show(resultView);
 }
 
-function savedTeam(){
-  return localStorage.getItem('fieldDispatchTeam'); // just the team name, e.g. "microbio"
-}
-function saveTeam(teamId){
-  localStorage.setItem('fieldDispatchTeam', teamId);
-}
-
-function renderMessage(big, small){
-  resultView.innerHTML = `<div class="center-msg"><div class="big">${big}</div><div class="small">${small}</div></div>`;
-  showView(resultView);
-}
-
-function renderStationCard(station, remaining, finished){
-  const progressText = finished
-    ? '<b>All stations complete.</b> Head back to base.'
-    : `<b>${remaining}</b> station${remaining === 1 ? '' : 's'} left to find.`;
-  resultView.innerHTML = `
+function stationCard(s,remaining,finished){
+  resultView.innerHTML=`
     <div class="stamp">Checked In</div>
-    <div class="station-name">${station.department || 'Station'}</div>
-    <div class="clue-label">Your clue</div>
-    <div class="clue-text">${station.clue || '(no clue set for this station)'}</div>
-    ${station.siteUrl ? `<a class="site-link" href="${station.siteUrl}" target="_blank" rel="noopener">Open the site ↗</a>` : ''}
-    <div class="progress-line">${progressText}</div>
-  `;
-  showView(resultView);
+    <div class="station">${s.department||'Station'}</div>
+    <div class="label">Your clue</div>
+    <div class="clue">${s.clue||'No clue has been added for this station yet.'}</div>
+    ${s.siteUrl?`<a class="site" href="${s.siteUrl}" target="_blank" rel="noopener">Open the site ↗</a>`:''}
+    <div class="progress">${finished?'<b>All stations complete.</b> Head back to base.':`<b>${remaining}</b> station${remaining===1?'':'s'} left to find.`}</div>`;
+  show(resultView);
 }
 
-/* Silent red flash for any mismatch/out-of-order scan. No text, per design. */
-function flashRedAndReset(){
-  frame.classList.add('dim');
-  body.classList.add('flash-red');
-  setTimeout(() => {
-    body.classList.remove('flash-red');
-    frame.classList.remove('dim');
-    // Return to a neutral idle state — re-run normal routing.
-    route();
-  }, 900);
+function flashWrong(){
+  body.classList.add('flash');
+  setTimeout(()=>{body.classList.remove('flash');route()},700);
 }
 
-/* ---------------------------------------------------------------------
-   NAME SELECTION (first scan of the Start QR, once per device)
---------------------------------------------------------------------- */
-function renderNameSelect(){
-  pageTitle.textContent = 'Join the Hunt';
-  pageSub.textContent = 'Tap your team.';
-  db.ref('teamNames').once('value').then(snap => {
-    const names = snap.val() || [];
-    nameGrid.innerHTML = names.map(n => `<button class="name-btn" data-name="${n}">${n}</button>`).join('');
-    nameGrid.querySelectorAll('.name-btn').forEach(btn => {
-      btn.addEventListener('click', () => registerTeam(btn.dataset.name, btn));
-    });
-    showView(nameView);
-  });
+function renderTeams(){
+  title.textContent='Join the Hunt';
+  sub.textContent='Tap your department. Your route is assigned automatically.';
+  db.ref('teamNames').once('value').then(snap=>{
+    const names=snap.val()||[];
+    teamGrid.innerHTML=names.map(n=>`<button class="team" data-team="${n}">${n}</button>`).join('');
+    teamGrid.querySelectorAll('.team').forEach(b=>b.onclick=()=>registerTeam(b.dataset.team));
+    show(teamView);
+  }).catch(()=>message('Signal lost','Could not load the department list. Please try again.'));
 }
 
-function registerTeam(teamId, clickedBtn){
-  nameGrid.querySelectorAll('.name-btn').forEach(b => b.disabled = true);
-  showView(loadingView);
+function registerTeam(teamId){
+  teamGrid.querySelectorAll('.team').forEach(b=>b.disabled=true);
+  show(loadingView);
+  const ref=db.ref('teams/'+teamId);
+  let created=false;
 
-  const teamRef = db.ref('teams/' + teamId);
-
-  // Step 1: atomically claim the team name. Only the FIRST device for
-  // this team will actually create it; later devices for the same
-  // team just find it already there and attach. `weCreatedIt` is set
-  // inside the callback itself so it's correct even if Firebase has
-  // to retry this transaction under contention.
-  let weCreatedIt = false;
-  teamRef.transaction(existing => {
-    weCreatedIt = false;
-    if (existing) return existing; // no-op — someone already claimed this name
-    weCreatedIt = true;
-    return {
-      name: teamId,
-      currentIndex: 0,
-      startedAt: firebase.database.ServerValue.TIMESTAMP,
-      order: 'PENDING' // placeholder, filled in step 2 — never left this way
-    };
-  }).then(() => {
+  ref.transaction(existing=>{
+    created=false;
+    if(existing)return existing;
+    created=true;
+    return {name:teamId,currentIndex:0,startedAt:firebase.database.ServerValue.TIMESTAMP,order:'PENDING'};
+  }).then(()=>{
     saveTeam(teamId);
+    if(!created){route();return;}
 
-    if (!weCreatedIt) {
-      // Either it already existed, or another device is mid-assignment.
-      // Either way, just proceed — route() will wait for order to appear.
-      route();
-      return;
-    }
-
-    // Step 2: we're first — atomically pop one order off the shared
-    // pool. The transaction's return value tells us exactly which
-    // entry WE removed, so there's no race with another team's device
-    // popping at the same instant.
-    let popped = null;
-    db.ref('orderPool').transaction(pool => {
-      popped = null;
-      if (!pool) return pool;
-      const keys = Object.keys(pool);
-      if (keys.length === 0) return pool; // pool exhausted
-      popped = pool[keys[0]];
-      const rest = Object.assign({}, pool);
-      delete rest[keys[0]];
+    let popped=null;
+    return db.ref('orderPool').transaction(pool=>{
+      popped=null;
+      if(!pool)return pool;
+      const keys=Object.keys(pool);
+      if(!keys.length)return pool;
+      const key=keys[0];
+      popped=pool[key];
+      const rest={...pool};
+      delete rest[key];
       return rest;
-    }).then(() => {
-      if (!popped) {
-        renderMessage('Full up', 'No spots left — check with base.');
-        return;
-      }
-      return teamRef.update({ order: popped }).then(() => route());
-    }).catch(err => {
-      renderMessage('Signal lost', 'Try tapping your team again.');
-      console.error('pool assignment failed', err);
+    }).then(()=>{
+      if(!popped){message('Full up','All routes have already been assigned. Please check with base.');return}
+      return ref.update({order:popped}).then(route);
     });
-  }).catch(err => {
-    renderMessage('Signal lost', 'Try tapping your team again.');
-    console.error('team creation failed', err);
+  }).catch(err=>{
+    console.error(err);
+    message('Signal lost','Please reconnect and try selecting your department again.');
   });
 }
 
-/* ---------------------------------------------------------------------
-   MAIN ROUTING
---------------------------------------------------------------------- */
 function route(){
-  const teamId = savedTeam();
-  if (!teamId) {
-    renderNameSelect();
-    return;
-  }
+  const teamId=savedTeam();
+  if(!teamId){renderTeams();return}
 
-  footerStrip.textContent = `TEAM ${teamId.toUpperCase()}`;
-  showView(loadingView);
+  footer.textContent=`TEAM ${teamId.toUpperCase()}`;
+  show(loadingView);
 
-  db.ref('teams/' + teamId).once('value').then(snap => {
-    const team = snap.val();
-    if (!team || team.order === 'PENDING') {
-      // Order assignment still in flight (rare) — brief retry.
-      setTimeout(route, 400);
-      return;
-    }
+  db.ref('teams/'+teamId).once('value').then(snap=>{
+    const team=snap.val();
+    if(!team){localStorage.removeItem('fieldDispatchTeam');renderTeams();return}
+    if(team.order==='PENDING'){setTimeout(route,400);return}
 
-    if (!stationParam) {
-      pageTitle.textContent = 'Base Camp';
-      pageSub.textContent = 'You\u2019re checked in. Scan a station code next.';
-      if (team.finishedAt) {
-        renderMessage('Hunt complete!', 'Nice work.');
-      } else {
-        const remaining = team.order.length - team.currentIndex;
-        renderMessage('Ready when you are', `${remaining} stations left to find.`);
+    if(!stationParam){
+      title.textContent='Base Camp';
+      sub.textContent='Your route is ready. Scan the next station QR when you are ready.';
+      if(team.finishedAt)message('Hunt complete!','Nice work. Return to base.');
+      else{
+        const remaining=Math.max(0,team.order.length-team.currentIndex);
+        message('Ready when you are',`${remaining} stations left to find.`);
       }
       return;
     }
 
-    if (stationParam === 'finish') {
-      return handleFinish(teamId, team);
-    }
-
-    pageTitle.textContent = 'Checking In…';
-    pageSub.textContent = '';
-    footerStrip.textContent = `TEAM ${teamId.toUpperCase()} · STATION ${stationParam.toUpperCase()}`;
-    handleCheckpoint(teamId, team, stationParam);
-  }).catch(err => {
-    renderMessage('Signal lost', 'Could not reach base. Check your connection and try again.');
-    console.error('route() read failed', err);
+    if(stationParam==='finish'){handleFinish(teamId,team);return}
+    title.textContent='Checking In…';sub.textContent='';
+    footer.textContent=`TEAM ${teamId.toUpperCase()} · ${stationParam.toUpperCase()}`;
+    handleCheckpoint(teamId,team,stationParam);
+  }).catch(err=>{
+    console.error(err);
+    message('Signal lost','Could not reach base. Check your connection and try again.');
   });
 }
 
-function handleFinish(teamId, team){
-  const teamRef = db.ref('teams/' + teamId);
-  const remaining = team.order.length - team.currentIndex;
-  if (remaining > 0) {
-    renderMessage('Not yet', `${remaining} station${remaining === 1 ? '' : 's'} left.`);
-    return;
-  }
-  if (team.finishedAt) {
-    renderMessage('Already finished', 'Nice work.');
-    return;
-  }
-  teamRef.update({ finishedAt: firebase.database.ServerValue.TIMESTAMP })
-    .then(() => renderMessage('Finished! 🎉', 'Your time has been recorded.'));
+function handleFinish(teamId,team){
+  const remaining=team.order.length-team.currentIndex;
+  if(remaining>0){message('Not yet',`${remaining} station${remaining===1?'':'s'} left.`);return}
+  if(team.finishedAt){message('Already finished','Nice work. Return to base.');return}
+  db.ref('teams/'+teamId+'/finishedAt').set(firebase.database.ServerValue.TIMESTAMP)
+    .then(()=>message('Finished! 🎉','Your time has been recorded. Return to base.'))
+    .catch(()=>message('Signal lost','Could not record your finish. Please try again.'));
 }
 
-function handleCheckpoint(teamId, team, station){
-  if (team.finishedAt || team.order[team.currentIndex] !== station) {
-    flashRedAndReset();
-    return;
+function handleCheckpoint(teamId,team,station){
+  if(team.finishedAt||!Array.isArray(team.order)||team.order[team.currentIndex]!==station){
+    flashWrong();return;
   }
-  const expectedIndex = team.currentIndex;
-  const totalStations = team.order.length;
 
-  // Transact on the currentIndex leaf ONLY — not the whole team object.
-  // This keeps every write scoped to exactly the field that's changing,
-  // which is what lets the security rules stay simple and reliable.
-  db.ref('teams/' + teamId + '/currentIndex').transaction(current => {
-    if (current !== expectedIndex) return; // someone else already advanced — abort
-    return expectedIndex + 1;
-  }).then(result => {
-    if (!result.committed) {
-      flashRedAndReset();
-      return;
-    }
-    const newIndex = result.snapshot.val();
-    const justFinished = newIndex >= totalStations;
-
-    const afterFinishWrite = justFinished
-      ? db.ref('teams/' + teamId + '/finishedAt').set(Date.now()).catch(() => {})
-      : Promise.resolve();
-
-    afterFinishWrite.then(() => {
-      db.ref('stations/' + station).once('value').then(sSnap => {
-        const stationData = sSnap.val() || {};
-        renderStationCard(stationData, totalStations - newIndex, justFinished);
-      });
-    });
+  const expected=team.currentIndex,total=team.order.length;
+  db.ref('teams/'+teamId+'/currentIndex').transaction(current=>{
+    if(current!==expected)return;
+    return expected+1;
+  }).then(result=>{
+    if(!result.committed){flashWrong();return}
+    const newIndex=result.snapshot.val(),finished=newIndex>=total;
+    const finishWrite=finished?db.ref('teams/'+teamId+'/finishedAt').set(firebase.database.ServerValue.TIMESTAMP):Promise.resolve();
+    return finishWrite.then(()=>db.ref('stations/'+station).once('value'))
+      .then(snap=>stationCard(snap.val()||{},total-newIndex,finished));
+  }).catch(err=>{
+    console.error(err);
+    message('Signal lost','Could not record this checkpoint. Please scan again.');
   });
 }
 
