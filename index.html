@@ -32,11 +32,11 @@ footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:
 <div class="frame">
 <div class="eyebrow">Field Dispatch</div>
 <h1 id="title">Check In</h1>
-<div class="sub" id="sub">Select your department once. Your route will be assigned automatically.</div>
+<div class="sub" id="sub">Select your department once.</div>
 <div class="card">
 <div id="teamView" class="hidden"><div class="grid" id="teamGrid"></div>
 <div class="notice">After selecting your team, you may close this page. Use the same phone to scan every station QR.</div></div>
-<div id="loadingView" class="hidden loading"><div class="big">Reading signal…</div><div class="small">Connecting to base and assigning your route.</div></div>
+<div id="loadingView" class="hidden loading"><div class="big">Reading signal…</div><div class="small">Connecting to base.</div></div>
 <div id="resultView" class="hidden"></div>
 </div>
 <footer id="footer"></footer>
@@ -90,9 +90,19 @@ function flashWrong(){
   setTimeout(()=>{body.classList.remove('flash');route()},700);
 }
 
+// The shared order is identical for every team — fetch it once and cache it.
+let ORDER=null;
+function getOrder(){
+  if(ORDER)return Promise.resolve(ORDER);
+  return db.ref('order').once('value').then(snap=>{
+    ORDER=snap.val()||[];
+    return ORDER;
+  });
+}
+
 function renderTeams(){
   title.textContent='Join the Hunt';
-  sub.textContent='Tap your department. Your route is assigned automatically.';
+  sub.textContent='Tap your department.';
   db.ref('teamNames').once('value').then(snap=>{
     const names=snap.val()||[];
     teamGrid.innerHTML=names.map(n=>`<button class="team" data-team="${n}">${n}</button>`).join('');
@@ -105,32 +115,13 @@ function registerTeam(teamId){
   teamGrid.querySelectorAll('.team').forEach(b=>b.disabled=true);
   show(loadingView);
   const ref=db.ref('teams/'+teamId);
-  let created=false;
 
   ref.transaction(existing=>{
-    created=false;
-    if(existing)return existing;
-    created=true;
-    return {name:teamId,currentIndex:0,startedAt:firebase.database.ServerValue.TIMESTAMP,order:'PENDING'};
+    if(existing)return existing; // no-op — someone already claimed this name
+    return {name:teamId,currentIndex:0,startedAt:firebase.database.ServerValue.TIMESTAMP};
   }).then(()=>{
     saveTeam(teamId);
-    if(!created){route();return;}
-
-    let popped=null;
-    return db.ref('orderPool').transaction(pool=>{
-      popped=null;
-      if(!pool)return pool;
-      const keys=Object.keys(pool);
-      if(!keys.length)return pool;
-      const key=keys[0];
-      popped=pool[key];
-      const rest={...pool};
-      delete rest[key];
-      return rest;
-    }).then(()=>{
-      if(!popped){message('Full up','All routes have already been assigned. Please check with base.');return}
-      return ref.update({order:popped}).then(route);
-    });
+    route();
   }).catch(err=>{
     console.error(err);
     message('Signal lost','Please reconnect and try selecting your department again.');
@@ -144,35 +135,37 @@ function route(){
   footer.textContent=`TEAM ${teamId.toUpperCase()}`;
   show(loadingView);
 
-  db.ref('teams/'+teamId).once('value').then(snap=>{
+  Promise.all([
+    db.ref('teams/'+teamId).once('value'),
+    getOrder()
+  ]).then(([snap,order])=>{
     const team=snap.val();
     if(!team){localStorage.removeItem('fieldDispatchTeam');renderTeams();return}
-    if(team.order==='PENDING'){setTimeout(route,400);return}
 
     if(!stationParam){
       title.textContent='Base Camp';
       sub.textContent='Here\u2019s where to go next.';
       if(team.finishedAt){message('Hunt complete!','Nice work. Return to base.');return}
-      const nextStation=team.order[team.currentIndex];
-      const remaining=Math.max(0,team.order.length-team.currentIndex);
+      const nextStation=order[team.currentIndex];
+      const remaining=Math.max(0,order.length-team.currentIndex);
       db.ref('stations/'+nextStation).once('value').then(sSnap=>{
         stationCard(sSnap.val()||{}, remaining, false);
       });
       return;
     }
 
-    if(stationParam==='finish'){handleFinish(teamId,team);return}
+    if(stationParam==='finish'){handleFinish(teamId,team,order);return}
     title.textContent='Checking In…';sub.textContent='';
     footer.textContent=`TEAM ${teamId.toUpperCase()} · ${stationParam.toUpperCase()}`;
-    handleCheckpoint(teamId,team,stationParam);
+    handleCheckpoint(teamId,team,order,stationParam);
   }).catch(err=>{
     console.error(err);
     message('Signal lost','Could not reach base. Check your connection and try again.');
   });
 }
 
-function handleFinish(teamId,team){
-  const remaining=team.order.length-team.currentIndex;
+function handleFinish(teamId,team,order){
+  const remaining=order.length-team.currentIndex;
   if(remaining>0){message('Not yet',`${remaining} station${remaining===1?'':'s'} left.`);return}
   if(team.finishedAt){message('Already finished','Nice work. Return to base.');return}
   db.ref('teams/'+teamId+'/finishedAt').set(firebase.database.ServerValue.TIMESTAMP)
@@ -180,12 +173,12 @@ function handleFinish(teamId,team){
     .catch(()=>message('Signal lost','Could not record your finish. Please try again.'));
 }
 
-function handleCheckpoint(teamId,team,station){
-  if(team.finishedAt||!Array.isArray(team.order)||team.order[team.currentIndex]!==station){
+function handleCheckpoint(teamId,team,order,station){
+  if(team.finishedAt||order[team.currentIndex]!==station){
     flashWrong();return;
   }
 
-  const expected=team.currentIndex,total=team.order.length;
+  const expected=team.currentIndex,total=order.length;
   db.ref('teams/'+teamId+'/currentIndex').transaction(current=>{
     if(current!==expected)return;
     return expected+1;
@@ -198,7 +191,7 @@ function handleCheckpoint(teamId,team,station){
         message('All stations found! 🎉','Head to the Finish QR to record your time.');
         return;
       }
-      const nextStation=team.order[newIndex]; // the NEXT stop, not the one just scanned
+      const nextStation=order[newIndex];
       return db.ref('stations/'+nextStation).once('value')
         .then(snap=>stationCard(snap.val()||{}, total-newIndex, false));
     });
