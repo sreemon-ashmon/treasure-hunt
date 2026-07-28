@@ -151,12 +151,13 @@ function route(){
 
     if(!stationParam){
       title.textContent='Base Camp';
-      sub.textContent='Your route is ready. Scan the next station QR when you are ready.';
-      if(team.finishedAt)message('Hunt complete!','Nice work. Return to base.');
-      else{
-        const remaining=Math.max(0,team.order.length-team.currentIndex);
-        message('Ready when you are',`${remaining} stations left to find.`);
-      }
+      sub.textContent='Here\u2019s where to go next.';
+      if(team.finishedAt){message('Hunt complete!','Nice work. Return to base.');return}
+      const nextStation=team.order[team.currentIndex];
+      const remaining=Math.max(0,team.order.length-team.currentIndex);
+      db.ref('stations/'+nextStation).once('value').then(sSnap=>{
+        stationCard(sSnap.val()||{}, remaining, false);
+      });
       return;
     }
 
@@ -192,8 +193,15 @@ function handleCheckpoint(teamId,team,station){
     if(!result.committed){flashWrong();return}
     const newIndex=result.snapshot.val(),finished=newIndex>=total;
     const finishWrite=finished?db.ref('teams/'+teamId+'/finishedAt').set(firebase.database.ServerValue.TIMESTAMP):Promise.resolve();
-    return finishWrite.then(()=>db.ref('stations/'+station).once('value'))
-      .then(snap=>stationCard(snap.val()||{},total-newIndex,finished));
+    return finishWrite.then(()=>{
+      if(finished){
+        message('All stations found! 🎉','Head to the Finish QR to record your time.');
+        return;
+      }
+      const nextStation=team.order[newIndex]; // the NEXT stop, not the one just scanned
+      return db.ref('stations/'+nextStation).once('value')
+        .then(snap=>stationCard(snap.val()||{}, total-newIndex, false));
+    });
   }).catch(err=>{
     console.error(err);
     message('Signal lost','Could not record this checkpoint. Please scan again.');
