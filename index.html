@@ -244,11 +244,17 @@ function registerTeam(teamId, clickedBtn){
       return rest;
     }).then(() => {
       if (!popped) {
-        renderMessage('Full up', '');
+        renderMessage('Full up', 'No spots left — check with base.');
         return;
       }
-      teamRef.update({ order: popped }).then(() => route());
+      return teamRef.update({ order: popped }).then(() => route());
+    }).catch(err => {
+      renderMessage('Signal lost', 'Try tapping your team again.');
+      console.error('pool assignment failed', err);
     });
+  }).catch(err => {
+    renderMessage('Signal lost', 'Try tapping your team again.');
+    console.error('team creation failed', err);
   });
 }
 
@@ -293,6 +299,9 @@ function route(){
     pageSub.textContent = '';
     footerStrip.textContent = `TEAM ${teamId.toUpperCase()} · STATION ${stationParam.toUpperCase()}`;
     handleCheckpoint(teamId, team, stationParam);
+  }).catch(err => {
+    renderMessage('Signal lost', 'Could not reach base. Check your connection and try again.');
+    console.error('route() read failed', err);
   });
 }
 
