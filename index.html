@@ -316,25 +316,32 @@ function handleCheckpoint(teamId, team, station){
     flashRedAndReset();
     return;
   }
-  const teamRef = db.ref('teams/' + teamId);
-  teamRef.transaction(t => {
-    if (!t) return t;
-    if (t.finishedAt) return t;
-    if (t.order[t.currentIndex] !== station) return t; // lost the race — no-op
-    const updated = Object.assign({}, t);
-    updated.currentIndex = t.currentIndex + 1;
-    if (updated.currentIndex >= t.order.length) updated.finishedAt = Date.now();
-    return updated;
+  const expectedIndex = team.currentIndex;
+  const totalStations = team.order.length;
+
+  // Transact on the currentIndex leaf ONLY — not the whole team object.
+  // This keeps every write scoped to exactly the field that's changing,
+  // which is what lets the security rules stay simple and reliable.
+  db.ref('teams/' + teamId + '/currentIndex').transaction(current => {
+    if (current !== expectedIndex) return; // someone else already advanced — abort
+    return expectedIndex + 1;
   }).then(result => {
     if (!result.committed) {
       flashRedAndReset();
       return;
     }
-    const finalTeam = result.snapshot.val();
-    db.ref('stations/' + station).once('value').then(sSnap => {
-      const stationData = sSnap.val() || {};
-      const remaining = finalTeam.order.length - finalTeam.currentIndex;
-      renderStationCard(stationData, remaining, !!finalTeam.finishedAt);
+    const newIndex = result.snapshot.val();
+    const justFinished = newIndex >= totalStations;
+
+    const afterFinishWrite = justFinished
+      ? db.ref('teams/' + teamId + '/finishedAt').set(Date.now()).catch(() => {})
+      : Promise.resolve();
+
+    afterFinishWrite.then(() => {
+      db.ref('stations/' + station).once('value').then(sSnap => {
+        const stationData = sSnap.val() || {};
+        renderStationCard(stationData, totalStations - newIndex, justFinished);
+      });
     });
   });
 }
