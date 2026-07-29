@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hunt Started</title>
+<style>
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #0f1117; color: #f2f2f2; font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 24px; text-align: center;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 8px; }
+  p { color: #9a9aad; max-width: 340px; }
+  .go { color: #ffcf5c; font-weight: 600; }
+</style>
+</head>
+<body>
+  <h1 id="msg">Loading...</h1>
+  <p id="sub"></p>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script>
+  const msg = document.getElementById('msg');
+  const sub = document.getElementById('sub');
+  const team = localStorage.getItem('qrhunt_team');
+  const secret = localStorage.getItem('qrhunt_secret');
+
+  if (!team || !secret) {
+    msg.textContent = "Not registered yet";
+    sub.innerHTML = 'Go back to the login page and pick your department first.';
+  } else {
+    const teamRef = db.ref('teams/' + team);
+    teamRef.get().then(snap => {
+      const data = snap.val();
+      if (!data.startedAt) {
+        teamRef.update({
+          startedAt: Date.now(),
+          secretToken: secret // required by rules so the write is authorized
+        }).then(showGo);
+      } else {
+        showGo();
+      }
+    });
+  }
+
+  function showGo() {
+    msg.textContent = "You're off, " + team + "!";
+    sub.innerHTML = 'Find your first checkpoint QR. <span class="go">Good luck.</span>';
+  }
+</script>
+</body>
+</html>
