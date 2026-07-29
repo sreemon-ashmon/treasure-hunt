@@ -3,54 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hunt Started</title>
-<style>
-  body {
-    margin: 0; min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #0f1117; color: #f2f2f2; font-family: 'Segoe UI', Arial, sans-serif;
-    padding: 24px; text-align: center;
-  }
-  h1 { font-size: 1.6rem; margin-bottom: 8px; }
-  p { color: #9a9aad; max-width: 340px; }
-  .go { color: #ffcf5c; font-weight: 600; }
-</style>
+<title>Start the Hunt</title>
+<link rel="stylesheet" href="station-style.css">
 </head>
 <body>
-  <h1 id="msg">Loading...</h1>
-  <p id="sub"></p>
+
+  <div id="gate">
+    <h2 id="gate-title"></h2>
+    <p id="gate-msg"></p>
+  </div>
+
+  <div id="game">
+    <h1>The Hunt Begins</h1>
+    <p class="sub">Crack this to get your very first clue</p>
+    <div id="puzzle"></div>
+    <div id="puzzle-status"></div>
+  </div>
+
+  <div id="clue-box">
+    <h2>Your First Clue</h2>
+    <p id="clue-text"></p>
+  </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
+<script src="station-engine.js"></script>
 <script>
-  const msg = document.getElementById('msg');
-  const sub = document.getElementById('sub');
+  const gateEl = document.getElementById('gate');
+  const gameEl = document.getElementById('game');
+  const clueEl = document.getElementById('clue-box');
+  const clueText = document.getElementById('clue-text');
+
   const team = localStorage.getItem('qrhunt_team');
   const secret = localStorage.getItem('qrhunt_secret');
 
+  // Swap this for your real "kickoff" image
+  const START_IMAGE = "https://images.unsplash.com/photo-1533000971552-6a962ca665c8?w=800";
+
   if (!team || !secret) {
-    msg.textContent = "Not registered yet";
-    sub.innerHTML = 'Go back to the login page and pick your department first.';
+    showGate('Not registered', 'Go back to the login page and select your department first.');
   } else {
     const teamRef = db.ref('teams/' + team);
     teamRef.get().then(snap => {
       const data = snap.val();
-      if (!data.startedAt) {
-        teamRef.update({
-          startedAt: Date.now(),
-          secretToken: secret // required by rules so the write is authorized
-        }).then(showGo);
+
+      if (data.startedAt) {
+        // Already started (e.g. page reload) — just show their first clue again, no need to re-solve
+        showFirstClue(data);
       } else {
-        showGo();
+        gateEl.style.display = 'none';
+        gameEl.style.display = 'block';
+        startPuzzle(START_IMAGE, () => onStartSolved(teamRef, secret));
       }
     });
   }
 
-  function showGo() {
-    msg.textContent = "You're off, " + team + "!";
-    sub.innerHTML = 'Find your first checkpoint QR. <span class="go">Good luck.</span>';
+  function onStartSolved(teamRef, secret) {
+    teamRef.get().then(snap => {
+      const data = snap.val();
+      if (data.startedAt) {
+        // Somehow already started via another device — just show the clue
+        showFirstClue(data);
+        return;
+      }
+      teamRef.update({
+        startedAt: Date.now(),
+        secretToken: secret
+      }).then(() => {
+        teamRef.get().then(freshSnap => showFirstClue(freshSnap.val()));
+      });
+    });
+  }
+
+  function showFirstClue(data) {
+    const firstStationId = data.order[0];
+    db.ref('stations/' + firstStationId + '/clue').get().then(clueSnap => {
+      gameEl.style.display = 'none';
+      clueEl.style.display = 'block';
+      clueText.textContent = clueSnap.val();
+    });
+  }
+
+  function showGate(title, message) {
+    gateEl.style.display = 'flex';
+    document.getElementById('gate-title').textContent = title;
+    document.getElementById('gate-msg').textContent = message;
   }
 </script>
+
 </body>
 </html>
