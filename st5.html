@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Checkpoint 1</title>
+<title>Checkpoint 5</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -26,24 +26,24 @@ h1{font:700 25px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:
 .status-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font:600 12px 'IBM Plex Mono';color:var(--dim)}
 footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
 
-.slide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:0 auto}
-.slide-tile{aspect-ratio:1/1;border-radius:10px;background:var(--ink);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 26px 'Space Grotesk';cursor:pointer;user-select:none;transition:transform .1s}
-.slide-tile:active{transform:scale(.94)}
-.slide-tile.blank{background:transparent;border-color:transparent;cursor:default}
+.color-word{font:700 30px 'Space Grotesk';text-align:center;margin:14px 0 22px}
+.color-options{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.color-swatch{width:64px;height:64px;border-radius:12px;cursor:pointer;border:2px solid var(--line)}
 
 </style>
 </head>
 <body id="body">
 <div class="frame">
 <div class="eyebrow">Field Dispatch</div>
-<h1 id="title">Checkpoint 1</h1>
-<div class="sub" id="sub">Slide the tiles into order, 1 through 8.</div>
+<h1 id="title">Checkpoint 5</h1>
+<div class="sub" id="sub">Tap the swatch that matches each word. 5 rounds.</div>
 <div class="card">
   <div id="loadingView" class="center"><div class="big">Reading signal…</div><div class="small">Checking your progress.</div></div>
   <div id="wrongView" class="hidden wrongtext">Not your QR yet!</div>
   <div id="gameView" class="hidden">
-    <div class="status-line"><span id="moves">0 moves</span></div>
-    <div class="slide-grid" id="grid"></div>
+    <div class="status-line"><span id="colorStatus">Round 1 / 5</span></div>
+    <div class="color-word" id="colorWord"></div>
+    <div class="color-options" id="colorOptions"></div>
   </div>
   <div id="resultView" class="hidden"></div>
 </div>
@@ -56,8 +56,8 @@ footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:
 /* ============================================================
    PER-STATION SETTINGS
 ============================================================ */
-const STATION_ID = 'st1';
-const STATION_TITLE = 'Checkpoint 1';
+const STATION_ID = 'st5';
+const STATION_TITLE = 'Checkpoint 5';
 /* ============================================================ */
 
 const firebaseConfig = {
@@ -194,67 +194,52 @@ function onSolved(expectedIndex, total, nextStationData){
 ===================================================== */
 
 function startGame(onWin){
-  const SIZE = 3;
-  const BLANK = 0;
-  let board;
+  const palette = [
+    { name: "RED", hex: "#c94a3f" },
+    { name: "BLUE", hex: "#3f7fc9" },
+    { name: "GREEN", hex: "#3fa860" },
+    { name: "YELLOW", hex: "#e0b93f" },
+    { name: "PURPLE", hex: "#9a5fc9" }
+  ];
+  const TOTAL_ROUNDS = 5;
+  const statusEl = document.getElementById('colorStatus');
+  const wordEl = document.getElementById('colorWord');
+  const optionsEl = document.getElementById('colorOptions');
+  let round = 0;
 
-  function solvedBoard(){ return [1,2,3,4,5,6,7,8,0]; }
+  function nextRound(){
+    round++;
+    statusEl.textContent = `Round ${round} / ${TOTAL_ROUNDS}`;
+    const correct = palette[Math.floor(Math.random() * palette.length)];
+    wordEl.textContent = correct.name;
+    wordEl.style.color = 'var(--paper)';
 
-  function isSolvable(b){
-    const arr = b.filter(n => n !== 0);
-    let inversions = 0;
-    for (let i = 0; i < arr.length; i++)
-      for (let j = i + 1; j < arr.length; j++)
-        if (arr[i] > arr[j]) inversions++;
-    return inversions % 2 === 0;
-  }
+    let options = [correct];
+    while (options.length < 4) {
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      if (!options.find(o => o.name === c.name)) options.push(c);
+    }
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
 
-  function shuffledBoard(){
-    let b;
-    do {
-      b = solvedBoard().slice();
-      for (let i = b.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [b[i], b[j]] = [b[j], b[i]];
-      }
-    } while (!isSolvable(b) || b.every((v, i) => v === solvedBoard()[i]));
-    return b;
-  }
-
-  const grid = document.getElementById('grid');
-  const movesEl = document.getElementById('moves');
-  let moves = 0;
-
-  board = shuffledBoard();
-  render();
-
-  function render(){
-    grid.innerHTML = '';
-    board.forEach((val, i) => {
-      const tile = document.createElement('div');
-      tile.className = 'slide-tile' + (val === BLANK ? ' blank' : '');
-      tile.textContent = val === BLANK ? '' : val;
-      tile.addEventListener('click', () => tryMove(i));
-      grid.appendChild(tile);
+    optionsEl.innerHTML = '';
+    options.forEach(o => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch';
+      sw.style.background = o.hex;
+      sw.addEventListener('click', () => {
+        if (o.name === correct.name) {
+          if (round >= TOTAL_ROUNDS) { setTimeout(onWin, 250); }
+          else { nextRound(); }
+        }
+      });
+      optionsEl.appendChild(sw);
     });
   }
 
-  function tryMove(i){
-    const blankIndex = board.indexOf(BLANK);
-    const row = Math.floor(i / SIZE), col = i % SIZE;
-    const blankRow = Math.floor(blankIndex / SIZE), blankCol = blankIndex % SIZE;
-    const adjacent = (Math.abs(row - blankRow) + Math.abs(col - blankCol)) === 1;
-    if (!adjacent) return;
-
-    [board[i], board[blankIndex]] = [board[blankIndex], board[i]];
-    moves++;
-    movesEl.textContent = `${moves} move${moves === 1 ? '' : 's'}`;
-    render();
-
-    if (board.every((v, idx) => v === solvedBoard()[idx])) {
-      setTimeout(onWin, 300);
-    }
-  }
+  nextRound();
 }
 
 </script>

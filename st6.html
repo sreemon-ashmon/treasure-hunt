@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Checkpoint 1</title>
+<title>Checkpoint 6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -26,24 +26,27 @@ h1{font:700 25px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:
 .status-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font:600 12px 'IBM Plex Mono';color:var(--dim)}
 footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
 
-.slide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:0 auto}
-.slide-tile{aspect-ratio:1/1;border-radius:10px;background:var(--ink);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 26px 'Space Grotesk';cursor:pointer;user-select:none;transition:transform .1s}
-.slide-tile:active{transform:scale(.94)}
-.slide-tile.blank{background:transparent;border-color:transparent;cursor:default}
+.ana-word{font:700 30px 'Space Grotesk';text-align:center;letter-spacing:.18em;margin:14px 0 20px;color:var(--gold)}
+.ana-input{width:100%;padding:12px;border-radius:8px;border:1.5px solid var(--line);background:var(--ink);color:var(--paper);font-size:16px;text-transform:uppercase;text-align:center}
+.ana-btn{margin-top:12px;width:100%;padding:12px;border-radius:8px;border:none;background:var(--amber);color:var(--ink);font-weight:700;cursor:pointer;font-size:15px}
+.ana-hint{text-align:center;color:var(--dim);font-size:12px;margin-top:8px;min-height:1.2em}
 
 </style>
 </head>
 <body id="body">
 <div class="frame">
 <div class="eyebrow">Field Dispatch</div>
-<h1 id="title">Checkpoint 1</h1>
-<div class="sub" id="sub">Slide the tiles into order, 1 through 8.</div>
+<h1 id="title">Checkpoint 6</h1>
+<div class="sub" id="sub">Unscramble the hidden word.</div>
 <div class="card">
   <div id="loadingView" class="center"><div class="big">Reading signal…</div><div class="small">Checking your progress.</div></div>
   <div id="wrongView" class="hidden wrongtext">Not your QR yet!</div>
   <div id="gameView" class="hidden">
-    <div class="status-line"><span id="moves">0 moves</span></div>
-    <div class="slide-grid" id="grid"></div>
+    <div class="status-line"><span>Crack the word</span></div>
+    <div class="ana-word" id="anaWord"></div>
+    <input class="ana-input" id="anaInput" type="text" placeholder="Your answer" autocomplete="off">
+    <button class="ana-btn" id="anaSubmit">Submit</button>
+    <div class="ana-hint" id="anaHint"></div>
   </div>
   <div id="resultView" class="hidden"></div>
 </div>
@@ -56,8 +59,8 @@ footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:
 /* ============================================================
    PER-STATION SETTINGS
 ============================================================ */
-const STATION_ID = 'st1';
-const STATION_TITLE = 'Checkpoint 1';
+const STATION_ID = 'st6';
+const STATION_TITLE = 'Checkpoint 6';
 /* ============================================================ */
 
 const firebaseConfig = {
@@ -194,67 +197,33 @@ function onSolved(expectedIndex, total, nextStationData){
 ===================================================== */
 
 function startGame(onWin){
-  const SIZE = 3;
-  const BLANK = 0;
-  let board;
+  const WORD = "PUZZLE"; // swap for your real word
+  const wordEl = document.getElementById('anaWord');
+  const input = document.getElementById('anaInput');
+  const btn = document.getElementById('anaSubmit');
+  const hint = document.getElementById('anaHint');
 
-  function solvedBoard(){ return [1,2,3,4,5,6,7,8,0]; }
-
-  function isSolvable(b){
-    const arr = b.filter(n => n !== 0);
-    let inversions = 0;
-    for (let i = 0; i < arr.length; i++)
-      for (let j = i + 1; j < arr.length; j++)
-        if (arr[i] > arr[j]) inversions++;
-    return inversions % 2 === 0;
-  }
-
-  function shuffledBoard(){
-    let b;
+  function scramble(word){
+    let letters = word.split('');
     do {
-      b = solvedBoard().slice();
-      for (let i = b.length - 1; i > 0; i--) {
+      for (let i = letters.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [b[i], b[j]] = [b[j], b[i]];
+        [letters[i], letters[j]] = [letters[j], letters[i]];
       }
-    } while (!isSolvable(b) || b.every((v, i) => v === solvedBoard()[i]));
-    return b;
+    } while (letters.join('') === word);
+    return letters.join(' ');
   }
 
-  const grid = document.getElementById('grid');
-  const movesEl = document.getElementById('moves');
-  let moves = 0;
+  wordEl.textContent = scramble(WORD);
 
-  board = shuffledBoard();
-  render();
-
-  function render(){
-    grid.innerHTML = '';
-    board.forEach((val, i) => {
-      const tile = document.createElement('div');
-      tile.className = 'slide-tile' + (val === BLANK ? ' blank' : '');
-      tile.textContent = val === BLANK ? '' : val;
-      tile.addEventListener('click', () => tryMove(i));
-      grid.appendChild(tile);
-    });
+  function check(){
+    const guess = input.value.trim().toUpperCase();
+    if (guess === WORD) { setTimeout(onWin, 200); }
+    else { hint.textContent = "Not quite — try again"; }
   }
 
-  function tryMove(i){
-    const blankIndex = board.indexOf(BLANK);
-    const row = Math.floor(i / SIZE), col = i % SIZE;
-    const blankRow = Math.floor(blankIndex / SIZE), blankCol = blankIndex % SIZE;
-    const adjacent = (Math.abs(row - blankRow) + Math.abs(col - blankCol)) === 1;
-    if (!adjacent) return;
-
-    [board[i], board[blankIndex]] = [board[blankIndex], board[i]];
-    moves++;
-    movesEl.textContent = `${moves} move${moves === 1 ? '' : 's'}`;
-    render();
-
-    if (board.every((v, idx) => v === solvedBoard()[idx])) {
-      setTimeout(onWin, 300);
-    }
-  }
+  btn.addEventListener('click', check);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
 }
 
 </script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Checkpoint 1</title>
+<title>Checkpoint 8</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -26,24 +26,23 @@ h1{font:700 25px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:
 .status-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font:600 12px 'IBM Plex Mono';color:var(--dim)}
 footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
 
-.slide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:0 auto}
-.slide-tile{aspect-ratio:1/1;border-radius:10px;background:var(--ink);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 26px 'Space Grotesk';cursor:pointer;user-select:none;transition:transform .1s}
-.slide-tile:active{transform:scale(.94)}
-.slide-tile.blank{background:transparent;border-color:transparent;cursor:default}
+.rot-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:220px;margin:0 auto}
+.rot-tile{aspect-ratio:1/1;background-size:200% 200%;border-radius:10px;border:2px solid var(--line);cursor:pointer;transition:transform .2s, border-color .2s}
+.rot-tile.correct{border-color:#3fa860}
 
 </style>
 </head>
 <body id="body">
 <div class="frame">
 <div class="eyebrow">Field Dispatch</div>
-<h1 id="title">Checkpoint 1</h1>
-<div class="sub" id="sub">Slide the tiles into order, 1 through 8.</div>
+<h1 id="title">Checkpoint 8</h1>
+<div class="sub" id="sub">Rotate each tile until the image sits upright.</div>
 <div class="card">
   <div id="loadingView" class="center"><div class="big">Reading signal…</div><div class="small">Checking your progress.</div></div>
   <div id="wrongView" class="hidden wrongtext">Not your QR yet!</div>
   <div id="gameView" class="hidden">
-    <div class="status-line"><span id="moves">0 moves</span></div>
-    <div class="slide-grid" id="grid"></div>
+    <div class="status-line"><span id="rotStatus">0 / 4 upright</span></div>
+    <div class="rot-grid" id="rotGrid"></div>
   </div>
   <div id="resultView" class="hidden"></div>
 </div>
@@ -56,8 +55,8 @@ footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:
 /* ============================================================
    PER-STATION SETTINGS
 ============================================================ */
-const STATION_ID = 'st1';
-const STATION_TITLE = 'Checkpoint 1';
+const STATION_ID = 'st8';
+const STATION_TITLE = 'Checkpoint 8';
 /* ============================================================ */
 
 const firebaseConfig = {
@@ -194,66 +193,38 @@ function onSolved(expectedIndex, total, nextStationData){
 ===================================================== */
 
 function startGame(onWin){
-  const SIZE = 3;
-  const BLANK = 0;
-  let board;
+  const IMAGE_URL = "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=800"; // swap for a real image
+  const GRID = 2, TOTAL = GRID * GRID;
+  const gridEl = document.getElementById('rotGrid');
+  const statusEl = document.getElementById('rotStatus');
 
-  function solvedBoard(){ return [1,2,3,4,5,6,7,8,0]; }
+  function pos(i){ const r = Math.floor(i / GRID), c = i % GRID; return `${-c*100}% ${-r*100}%`; }
 
-  function isSolvable(b){
-    const arr = b.filter(n => n !== 0);
-    let inversions = 0;
-    for (let i = 0; i < arr.length; i++)
-      for (let j = i + 1; j < arr.length; j++)
-        if (arr[i] > arr[j]) inversions++;
-    return inversions % 2 === 0;
+  let rotations = Array.from({ length: TOTAL }, () => [90, 180, 270][Math.floor(Math.random() * 3)]);
+  let correctCount = 0;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const div = document.createElement('div');
+    div.className = 'rot-tile';
+    div.style.backgroundImage = `url("${IMAGE_URL}")`;
+    div.style.backgroundPosition = pos(i);
+    div.style.transform = `rotate(${rotations[i]}deg)`;
+    div.addEventListener('click', () => rotate(i, div));
+    gridEl.appendChild(div);
   }
 
-  function shuffledBoard(){
-    let b;
-    do {
-      b = solvedBoard().slice();
-      for (let i = b.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [b[i], b[j]] = [b[j], b[i]];
-      }
-    } while (!isSolvable(b) || b.every((v, i) => v === solvedBoard()[i]));
-    return b;
-  }
+  function rotate(i, div){
+    const wasCorrect = rotations[i] === 0;
+    rotations[i] = (rotations[i] + 90) % 360;
+    div.style.transform = `rotate(${rotations[i]}deg)`;
+    const isCorrect = rotations[i] === 0;
+    div.classList.toggle('correct', isCorrect);
 
-  const grid = document.getElementById('grid');
-  const movesEl = document.getElementById('moves');
-  let moves = 0;
+    if (isCorrect && !wasCorrect) correctCount++;
+    if (!isCorrect && wasCorrect) correctCount--;
 
-  board = shuffledBoard();
-  render();
-
-  function render(){
-    grid.innerHTML = '';
-    board.forEach((val, i) => {
-      const tile = document.createElement('div');
-      tile.className = 'slide-tile' + (val === BLANK ? ' blank' : '');
-      tile.textContent = val === BLANK ? '' : val;
-      tile.addEventListener('click', () => tryMove(i));
-      grid.appendChild(tile);
-    });
-  }
-
-  function tryMove(i){
-    const blankIndex = board.indexOf(BLANK);
-    const row = Math.floor(i / SIZE), col = i % SIZE;
-    const blankRow = Math.floor(blankIndex / SIZE), blankCol = blankIndex % SIZE;
-    const adjacent = (Math.abs(row - blankRow) + Math.abs(col - blankCol)) === 1;
-    if (!adjacent) return;
-
-    [board[i], board[blankIndex]] = [board[blankIndex], board[i]];
-    moves++;
-    movesEl.textContent = `${moves} move${moves === 1 ? '' : 's'}`;
-    render();
-
-    if (board.every((v, idx) => v === solvedBoard()[idx])) {
-      setTimeout(onWin, 300);
-    }
+    statusEl.textContent = `${correctCount} / ${TOTAL} upright`;
+    if (correctCount === TOTAL) setTimeout(onWin, 300);
   }
 }
 

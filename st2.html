@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Checkpoint 1</title>
+<title>Checkpoint 2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -26,24 +26,23 @@ h1{font:700 25px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:
 .status-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font:600 12px 'IBM Plex Mono';color:var(--dim)}
 footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
 
-.slide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:0 auto}
-.slide-tile{aspect-ratio:1/1;border-radius:10px;background:var(--ink);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 26px 'Space Grotesk';cursor:pointer;user-select:none;transition:transform .1s}
-.slide-tile:active{transform:scale(.94)}
-.slide-tile.blank{background:transparent;border-color:transparent;cursor:default}
+.jig-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-width:260px;margin:0 auto;aspect-ratio:1/1}
+.jig-piece{background-size:200% 200%;border:2px solid var(--line);border-radius:8px;cursor:pointer;transition:transform .1s}
+.jig-piece.selected{border-color:var(--amber);transform:scale(.94)}
 
 </style>
 </head>
 <body id="body">
 <div class="frame">
 <div class="eyebrow">Field Dispatch</div>
-<h1 id="title">Checkpoint 1</h1>
-<div class="sub" id="sub">Slide the tiles into order, 1 through 8.</div>
+<h1 id="title">Checkpoint 2</h1>
+<div class="sub" id="sub">Tap two pieces to swap them until the picture is whole.</div>
 <div class="card">
   <div id="loadingView" class="center"><div class="big">Reading signal…</div><div class="small">Checking your progress.</div></div>
   <div id="wrongView" class="hidden wrongtext">Not your QR yet!</div>
   <div id="gameView" class="hidden">
-    <div class="status-line"><span id="moves">0 moves</span></div>
-    <div class="slide-grid" id="grid"></div>
+    <div class="status-line"><span id="jigStatus">Tap two pieces to swap them</span></div>
+    <div class="jig-grid" id="jigGrid"></div>
   </div>
   <div id="resultView" class="hidden"></div>
 </div>
@@ -56,8 +55,8 @@ footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:
 /* ============================================================
    PER-STATION SETTINGS
 ============================================================ */
-const STATION_ID = 'st1';
-const STATION_TITLE = 'Checkpoint 1';
+const STATION_ID = 'st2';
+const STATION_TITLE = 'Checkpoint 2';
 /* ============================================================ */
 
 const firebaseConfig = {
@@ -194,67 +193,48 @@ function onSolved(expectedIndex, total, nextStationData){
 ===================================================== */
 
 function startGame(onWin){
-  const SIZE = 3;
-  const BLANK = 0;
-  let board;
+  const IMAGE_URL = "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=800"; // swap for a real image
+  const SIZE = 2;
+  const grid = document.getElementById('jigGrid');
+  const statusEl = document.getElementById('jigStatus');
+  let pieces = [0, 1, 2, 3];
 
-  function solvedBoard(){ return [1,2,3,4,5,6,7,8,0]; }
+  do {
+    for (let i = pieces.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
+    }
+  } while (pieces.every((v, i) => v === i));
 
-  function isSolvable(b){
-    const arr = b.filter(n => n !== 0);
-    let inversions = 0;
-    for (let i = 0; i < arr.length; i++)
-      for (let j = i + 1; j < arr.length; j++)
-        if (arr[i] > arr[j]) inversions++;
-    return inversions % 2 === 0;
-  }
+  let selected = null;
 
-  function shuffledBoard(){
-    let b;
-    do {
-      b = solvedBoard().slice();
-      for (let i = b.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [b[i], b[j]] = [b[j], b[i]];
-      }
-    } while (!isSolvable(b) || b.every((v, i) => v === solvedBoard()[i]));
-    return b;
-  }
-
-  const grid = document.getElementById('grid');
-  const movesEl = document.getElementById('moves');
-  let moves = 0;
-
-  board = shuffledBoard();
-  render();
+  function posFor(idx){ const r = Math.floor(idx / SIZE), c = idx % SIZE; return `${-c*100}% ${-r*100}%`; }
 
   function render(){
     grid.innerHTML = '';
-    board.forEach((val, i) => {
-      const tile = document.createElement('div');
-      tile.className = 'slide-tile' + (val === BLANK ? ' blank' : '');
-      tile.textContent = val === BLANK ? '' : val;
-      tile.addEventListener('click', () => tryMove(i));
-      grid.appendChild(tile);
+    pieces.forEach((val, i) => {
+      const div = document.createElement('div');
+      div.className = 'jig-piece' + (selected === i ? ' selected' : '');
+      div.style.backgroundImage = `url("${IMAGE_URL}")`;
+      div.style.backgroundPosition = posFor(val);
+      div.addEventListener('click', () => tap(i));
+      grid.appendChild(div);
     });
   }
 
-  function tryMove(i){
-    const blankIndex = board.indexOf(BLANK);
-    const row = Math.floor(i / SIZE), col = i % SIZE;
-    const blankRow = Math.floor(blankIndex / SIZE), blankCol = blankIndex % SIZE;
-    const adjacent = (Math.abs(row - blankRow) + Math.abs(col - blankCol)) === 1;
-    if (!adjacent) return;
-
-    [board[i], board[blankIndex]] = [board[blankIndex], board[i]];
-    moves++;
-    movesEl.textContent = `${moves} move${moves === 1 ? '' : 's'}`;
+  function tap(i){
+    if (selected === null) { selected = i; render(); return; }
+    if (selected === i) { selected = null; render(); return; }
+    [pieces[selected], pieces[i]] = [pieces[i], pieces[selected]];
+    selected = null;
     render();
-
-    if (board.every((v, idx) => v === solvedBoard()[idx])) {
+    if (pieces.every((v, idx) => v === idx)) {
+      statusEl.textContent = "Solved!";
       setTimeout(onWin, 300);
     }
   }
+
+  render();
 }
 
 </script>
