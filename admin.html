@@ -2,96 +2,105 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Field Dispatch — Base Camp</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Hunt Progress</title>
 <style>
-:root{--ink:#161f1a;--ink2:#1f2b23;--paper:#e9e3d0;--dim:#9aa79c;--amber:#e8a33d;--line:rgba(233,227,208,.14)}
-*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--paper);font-family:Inter,sans-serif;padding:28px 20px 60px}.wrap{max-width:1000px;margin:auto}
-.top{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}h1{font:700 25px 'Space Grotesk';margin:0 0 4px}.sub{color:var(--dim);font:500 12px 'IBM Plex Mono'}.live{font:600 11px 'IBM Plex Mono';color:var(--amber);white-space:nowrap}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}.stat{background:var(--ink2);border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{display:block;font:700 22px 'Space Grotesk';margin-bottom:4px}.stat span{color:var(--dim);font:500 10px 'IBM Plex Mono';text-transform:uppercase;letter-spacing:.08em}
-table{width:100%;border-collapse:collapse}th{text-align:left;font:600 11px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--amber);padding:0 12px 10px;border-bottom:1px solid var(--line)}td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}tr:hover td{background:rgba(233,227,208,.03)}
-.team{font:700 15px 'Space Grotesk';text-transform:capitalize}.id{font:500 11px 'IBM Plex Mono';color:var(--dim);margin-top:3px}.pill{display:inline-block;font:600 10px 'IBM Plex Mono';padding:4px 9px;border-radius:99px;border:1px solid var(--line)}
-.finished{color:var(--ink);background:var(--amber);border-color:var(--amber)}.progress{color:var(--paper)}.notstarted{color:var(--dim);opacity:.65}.bar{width:170px;height:7px;background:var(--ink2);border:1px solid var(--line);border-radius:5px;overflow:hidden}.fill{height:100%;background:var(--amber)}.mono{font:500 11px 'IBM Plex Mono';color:var(--dim)}.empty{text-align:center;padding:60px 0;color:var(--dim);font:500 12px 'IBM Plex Mono'}
-@media(max-width:700px){body{padding:20px 12px}.top{align-items:start;flex-direction:column;gap:8px}.stats{grid-template-columns:1fr 1fr}th,td{padding:10px 6px}.bar{width:100px}.hide-mobile{display:none}}
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #0f1117; color: #f2f2f2;
+    font-family: 'Segoe UI', Arial, sans-serif; padding: 24px;
+  }
+  h1 { font-size: 1.3rem; margin-bottom: 4px; }
+  p.sub { color: #9a9aad; margin-top: 0; margin-bottom: 24px; font-size: 0.85rem; }
+
+  table { width: 100%; border-collapse: collapse; max-width: 780px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #262832; font-size: 0.9rem; }
+  th { color: #9a9aad; font-weight: 500; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+
+  .bar-wrap { background: #1a1c26; border-radius: 6px; overflow: hidden; height: 10px; width: 140px; }
+  .bar-fill { background: linear-gradient(90deg, #ffcf5c, #ff9a3c); height: 100%; }
+
+  .winner-row { background: rgba(255, 207, 92, 0.08); }
+  .trophy { color: #ffcf5c; }
+
+  #winner-banner {
+    display: none;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #ffcf5c, #ff9a3c);
+    color: #2a1a00;
+    border-radius: 10px;
+    font-weight: 600;
+    max-width: 780px;
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-<div class="top"><div><h1>Base Camp Dashboard</h1><div class="sub" id="status">Connecting to Firebase…</div></div><div class="live">● LIVE</div></div>
-<div class="stats">
-<div class="stat"><b id="total">0</b><span>Teams</span></div>
-<div class="stat"><b id="started">0</b><span>Started</span></div>
-<div class="stat"><b id="finished">0</b><span>Finished</span></div>
-<div class="stat"><b id="active">0</b><span>In Progress</span></div>
-</div>
-<table><thead><tr><th>Team</th><th>Status</th><th>Progress</th><th>Started</th><th class="hide-mobile">Finished</th></tr></thead><tbody id="rows"></tbody></table>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<h1>Treasure Hunt — Live Admin View</h1>
+<p class="sub">Not for participant screens. Progress updates automatically.</p>
+
+<div id="winner-banner"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Department</th>
+      <th>Progress</th>
+      <th></th>
+      <th>Started</th>
+      <th>Finished</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
-  authDomain: "treasure-hunt-fae61.firebaseapp.com",
-  databaseURL: "https://treasure-hunt-fae61-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "treasure-hunt-fae61",
-  storageBucket: "treasure-hunt-fae61.firebasestorage.app",
-  messagingSenderId: "561518091730",
-  appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
-};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database(),rows=document.getElementById('rows'),status=document.getElementById('status');
+  const rowsEl = document.getElementById('rows');
+  const banner = document.getElementById('winner-banner');
 
-function time(ts){
-  if(!ts)return '—';
-  return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
-
-db.ref('teams').on('value',snap=>{
-  const teams=snap.val()||{},ids=Object.keys(teams).sort((a,b)=>a.localeCompare(b));
-  let started=0,finished=0,active=0;
-  ids.forEach(id=>{
-    const t=teams[id]||{};
-    if(t.startedAt)started++;
-    if(t.finishedAt)finished++;
-    else if(t.startedAt)active++;
-  });
-
-  document.getElementById('total').textContent=ids.length;
-  document.getElementById('started').textContent=started;
-  document.getElementById('finished').textContent=finished;
-  document.getElementById('active').textContent=active;
-  status.textContent=`Live · ${ids.length} team${ids.length===1?'':'s'} · updates automatically`;
-
-  if(!ids.length){
-    rows.innerHTML='<tr><td colspan="5"><div class="empty">No teams have checked in yet.</div></td></tr>';
-    return;
+  function fmt(ts) {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleTimeString();
   }
 
-  rows.innerHTML=ids.map(id=>{
-    const t=teams[id]||{};
-    const total=Array.isArray(t.order)?t.order.length:10;
-    const done=Math.min(Number(t.currentIndex)||0,total);
-    const pct=total?Math.round(done/total*100):0;
-    let pill='';
-    if(t.finishedAt)pill='<span class="pill finished">Finished</span>';
-    else if(t.startedAt)pill='<span class="pill progress">In progress</span>';
-    else pill='<span class="pill notstarted">Not started</span>';
+  db.ref('teams').on('value', snap => {
+    const teams = snap.val() || {};
+    const entries = Object.values(teams);
 
-    return `<tr>
-      <td><div class="team">${t.name||id}</div><div class="id">${id}</div></td>
-      <td>${pill}</td>
-      <td><div class="bar"><div class="fill" style="width:${pct}%"></div></div><div class="mono">${done} / ${total} · ${pct}%</div></td>
-      <td class="mono">${time(t.startedAt)}</td>
-      <td class="mono hide-mobile">${time(t.finishedAt)}</td>
-    </tr>`;
-  }).join('');
-},err=>{
-  console.error(err);
-  status.textContent='Unable to read team data';
-});
+    // Determine first finisher
+    const finishedTeams = entries.filter(t => t.finishedAt).sort((a, b) => a.finishedAt - b.finishedAt);
+    const winner = finishedTeams[0];
+
+    if (winner) {
+      banner.style.display = 'block';
+      banner.textContent = `🏆 ${winner.department} finished first — ${fmt(winner.finishedAt)}`;
+    }
+
+    rowsEl.innerHTML = '';
+    entries
+      .sort((a, b) => (b.currentIndex - a.currentIndex))
+      .forEach(t => {
+        const total = t.order ? t.order.length : 10;
+        const pct = Math.round((t.currentIndex / total) * 100);
+        const isWinner = winner && winner.department === t.department;
+
+        const tr = document.createElement('tr');
+        if (isWinner) tr.className = 'winner-row';
+        tr.innerHTML = `
+          <td>${isWinner ? '<span class="trophy">🏆</span> ' : ''}${t.department}</td>
+          <td>${t.currentIndex} / ${total}</td>
+          <td><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div></td>
+          <td>${fmt(t.startedAt)}</td>
+          <td>${fmt(t.finishedAt)}</td>
+        `;
+        rowsEl.appendChild(tr);
+      });
+  });
 </script>
+
 </body>
 </html>
