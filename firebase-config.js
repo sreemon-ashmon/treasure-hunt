@@ -3,13 +3,13 @@
 // Get these values from Firebase Console → Project Settings → General → Your apps → SDK config
 // ============================================
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
+  authDomain: "treasure-hunt-fae61.firebaseapp.com",
+  databaseURL: "https://treasure-hunt-fae61-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "treasure-hunt-fae61",
+  storageBucket: "treasure-hunt-fae61.firebasestorage.app",
+  messagingSenderId: "561518091730",
+  appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
 };
 
 firebase.initializeApp(firebaseConfig);
