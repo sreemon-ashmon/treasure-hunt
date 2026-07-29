@@ -5,56 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Start the Hunt</title>
 <link rel="stylesheet" href="station-style.css">
+<style>
+  #puzzle { display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr);
+    width: min(85vw,380px); height: min(85vw,380px); gap: 2px; background:#000; border:3px solid #333;
+    border-radius:6px; overflow:hidden; }
+  .tile { background-size: 300% 300%; cursor: pointer; }
+  .tile.blank { background: #16171f; cursor: default; }
+</style>
 </head>
 <body>
 
-  <div id="gate">
-    <h2 id="gate-title"></h2>
-    <p id="gate-msg"></p>
-  </div>
+  <div id="gate"><h2 id="gate-title"></h2><p id="gate-msg"></p></div>
 
-  <div id="game">
-    <h1>The Hunt Begins</h1>
+  <div id="game" style="flex-direction:column; align-items:center;">
+    <h1>🚦 The Hunt Begins</h1>
     <p class="sub">Crack this to get your very first clue</p>
     <div id="puzzle"></div>
-    <div id="puzzle-status"></div>
+    <div class="game-status" id="status">Not solved yet</div>
   </div>
 
-  <div id="clue-box">
-    <h2>Your First Clue</h2>
-    <p id="clue-text"></p>
-  </div>
+  <div id="clue-box"><h2>Your First Clue</h2><p id="clue-text"></p></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="station-engine.js"></script>
 <script>
   const gateEl = document.getElementById('gate');
   const gameEl = document.getElementById('game');
   const clueEl = document.getElementById('clue-box');
   const clueText = document.getElementById('clue-text');
+  const IMAGE_URL = "https://images.unsplash.com/photo-1533000971552-6a962ca665c8?w=800"; // swap for real kickoff image
 
   const team = localStorage.getItem('qrhunt_team');
   const secret = localStorage.getItem('qrhunt_secret');
-
-  // Swap this for your real "kickoff" image
-  const START_IMAGE = "https://images.unsplash.com/photo-1533000971552-6a962ca665c8?w=800";
 
   if (!team || !secret) {
     showGate('Not registered', 'Go back to the login page and select your department first.');
   } else {
     const teamRef = db.ref('teams/' + team);
     teamRef.get().then(snap => {
+      if (!snap.exists()) { showGate('Team not found', 'Re-register from the login page.'); return; }
       const data = snap.val();
-
       if (data.startedAt) {
-        // Already started (e.g. page reload) — just show their first clue again, no need to re-solve
+        // Already started (e.g. reload) — just show their first clue again, no need to re-solve
         showFirstClue(data);
       } else {
         gateEl.style.display = 'none';
-        gameEl.style.display = 'block';
-        startPuzzle(START_IMAGE, () => onStartSolved(teamRef, secret));
+        gameEl.style.display = 'flex';
+        startPuzzleGame(() => onStartSolved(teamRef, secret));
       }
     });
   }
@@ -62,15 +60,8 @@
   function onStartSolved(teamRef, secret) {
     teamRef.get().then(snap => {
       const data = snap.val();
-      if (data.startedAt) {
-        // Somehow already started via another device — just show the clue
-        showFirstClue(data);
-        return;
-      }
-      teamRef.update({
-        startedAt: Date.now(),
-        secretToken: secret
-      }).then(() => {
+      if (data.startedAt) { showFirstClue(data); return; }
+      teamRef.update({ startedAt: Date.now(), secretToken: secret }).then(() => {
         teamRef.get().then(freshSnap => showFirstClue(freshSnap.val()));
       });
     });
@@ -80,7 +71,7 @@
     const firstStationId = data.order[0];
     db.ref('stations/' + firstStationId + '/clue').get().then(clueSnap => {
       gameEl.style.display = 'none';
-      clueEl.style.display = 'block';
+      clueEl.style.display = 'flex';
       clueText.textContent = clueSnap.val();
     });
   }
@@ -90,7 +81,58 @@
     document.getElementById('gate-title').textContent = title;
     document.getElementById('gate-msg').textContent = message;
   }
-</script>
 
+  // ---- self-contained sliding puzzle, same mechanic as station1 ----
+  function startPuzzleGame(onSolve) {
+    const GRID = 3, TOTAL = GRID * GRID, BLANK = TOTAL - 1;
+    const puzzleEl = document.getElementById('puzzle');
+    const statusEl = document.getElementById('status');
+    let tiles = [];
+
+    function pos(i) { const r = Math.floor(i / GRID), c = i % GRID; return `${-c*100}% ${-r*100}%`; }
+
+    function render() {
+      puzzleEl.innerHTML = '';
+      tiles.forEach((t, p) => {
+        const div = document.createElement('div');
+        div.className = 'tile' + (t === BLANK ? ' blank' : '');
+        if (t !== BLANK) { div.style.backgroundImage = `url("${IMAGE_URL}")`; div.style.backgroundPosition = pos(t); }
+        div.addEventListener('click', () => move(p));
+        puzzleEl.appendChild(div);
+      });
+    }
+
+    function adj(a, b) {
+      const ra = Math.floor(a/GRID), ca = a%GRID, rb = Math.floor(b/GRID), cb = b%GRID;
+      return Math.abs(ra-rb) + Math.abs(ca-cb) === 1;
+    }
+
+    function move(p) {
+      const blankPos = tiles.indexOf(BLANK);
+      if (adj(p, blankPos)) {
+        [tiles[p], tiles[blankPos]] = [tiles[blankPos], tiles[p]];
+        render();
+        if (tiles.every((t, i) => t === i)) {
+          statusEl.textContent = "Solved!";
+          onSolve();
+        }
+      }
+    }
+
+    function solvable(arr) {
+      const flat = arr.filter(v => v !== BLANK);
+      let inv = 0;
+      for (let i = 0; i < flat.length; i++) for (let j = i+1; j < flat.length; j++) if (flat[i] > flat[j]) inv++;
+      return inv % 2 === 0;
+    }
+
+    do {
+      tiles = Array.from({length: TOTAL}, (_, i) => i);
+      for (let i = tiles.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [tiles[i],tiles[j]]=[tiles[j],tiles[i]]; }
+    } while (!solvable(tiles) || tiles.every((v,i) => v === i));
+
+    render();
+  }
+</script>
 </body>
 </html>
