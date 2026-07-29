@@ -64,14 +64,19 @@ function initStation(STATION_ID, IMAGE_URL) {
       }
 
       teamRef.update(updates).then(() => {
-        db.ref('stations/' + STATION_ID + '/clue').get().then(clueSnap => {
-          gameEl.style.display = 'none';
-          clueEl.style.display = 'block';
-          clueText.textContent = clueSnap.val();
-          if (newIndex >= totalStations) {
-            clueText.textContent += "\n\n🏆 That was the last checkpoint — go scan the FINISH QR!";
-          }
-        });
+        gameEl.style.display = 'none';
+        clueEl.style.display = 'block';
+
+        if (newIndex >= totalStations) {
+          // No stations left — this was the last one
+          clueText.textContent = "🏆 You've cracked the final checkpoint — head to the FINISH QR and claim your win!";
+        } else {
+          // Reveal the clue for the NEXT station in their sequence, not this one
+          const nextStationId = data.order[newIndex];
+          db.ref('stations/' + nextStationId + '/clue').get().then(clueSnap => {
+            clueText.textContent = clueSnap.val();
+          });
+        }
       });
     });
   }
