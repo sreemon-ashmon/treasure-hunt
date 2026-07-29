@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Station 2 — Sliding Puzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#161f1a;--ink2:#1f2b23;--paper:#e9e3d0;--dim:#cfc7ab;--amber:#e8a33d;--rust:#b8492f;--gold:#f4c95d;--line:rgba(233,227,208,.14)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 15% -10%,rgba(232,163,61,.1),transparent 45%),var(--ink);color:var(--paper);font-family:Inter,sans-serif;display:flex;justify-content:center;padding:24px;transition:.2s}
+body.wrong{background:var(--rust)}
+.frame{width:100%;max-width:460px}.eyebrow{font:600 11px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.eyebrow:before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:8px;box-shadow:0 0 0 3px rgba(232,163,61,.18)}
+h1{font:700 25px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:14px;line-height:1.5;margin-bottom:20px}
+.card{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:22px;position:relative;overflow:hidden}
+.card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,var(--amber) 0 10px,transparent 10px 20px);opacity:.55}
+.center{text-align:center;padding:20px 4px}.big{font:700 20px 'Space Grotesk';margin-bottom:8px}.small{color:var(--dim);font-size:13px;line-height:1.6}
+.wrongtext{font:700 22px 'Space Grotesk';text-align:center;padding:40px 4px}
+.hidden{display:none}
+.stamp{display:inline-block;font:700 13px 'Space Grotesk';letter-spacing:.06em;text-transform:uppercase;color:var(--amber);border:2px solid var(--amber);padding:4px 10px;border-radius:6px;transform:rotate(-3deg);margin-bottom:16px}
+.station{font:700 22px 'Space Grotesk';margin-bottom:14px;text-align:center}
+.label{font:600 11px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.clue{background:var(--ink);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:6px;padding:14px 16px;font-size:15px;line-height:1.55;margin-bottom:4px;white-space:pre-wrap}
+
+/* --- sliding puzzle grid --- */
+.status-line{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font:600 12px 'IBM Plex Mono';color:var(--dim)}
+.slide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:280px;margin:0 auto}
+.slide-tile{aspect-ratio:1/1;border-radius:10px;background:var(--ink);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font:700 26px 'Space Grotesk';cursor:pointer;user-select:none;transition:transform .1s}
+.slide-tile:active{transform:scale(.94)}
+.slide-tile.blank{background:transparent;border-color:transparent;cursor:default}
+footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
+</style>
+</head>
+<body id="body">
+<div class="frame">
+<div class="eyebrow">Field Dispatch</div>
+<h1 id="title">Station 2</h1>
+<div class="sub" id="sub">Slide the tiles into order, 1 through 8.</div>
+<div class="card">
+  <div id="loadingView" class="center"><div class="big">Reading signal…</div><div class="small">Checking your progress.</div></div>
+  <div id="wrongView" class="hidden wrongtext">Not your QR yet!</div>
+  <div id="gameView" class="hidden">
+    <div class="status-line"><span id="moves">0 moves</span></div>
+    <div class="slide-grid" id="grid"></div>
+  </div>
+  <div id="resultView" class="hidden"></div>
+</div>
+<footer id="footer"></footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ============================================================
+   PER-STATION SETTINGS — change these two lines for each of
+   your other 9 station pages, everything below stays the same.
+============================================================ */
+const STATION_ID = 'st2';
+const STATION_TITLE = 'Station 2';
+/* ============================================================ */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
+  authDomain: "treasure-hunt-fae61.firebaseapp.com",
+  databaseURL: "https://treasure-hunt-fae61-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "treasure-hunt-fae61",
+  storageBucket: "treasure-hunt-fae61.firebasestorage.app",
+  messagingSenderId: "561518091730",
+  appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const body = document.getElementById('body');
+const title = document.getElementById('title'), sub = document.getElementById('sub'), footer = document.getElementById('footer');
+const loadingView = document.getElementById('loadingView'), wrongView = document.getElementById('wrongView');
+const gameView = document.getElementById('gameView'), resultView = document.getElementById('resultView');
+
+function showOnly(el){ [loadingView, wrongView, gameView, resultView].forEach(x => x.classList.add('hidden')); el.classList.remove('hidden'); }
+function savedTeam(){ return localStorage.getItem('fieldDispatchTeam'); }
+
+function message(big, small){
+  resultView.innerHTML = `<div class="center"><div class="big">${big}</div><div class="small">${small}</div></div>`;
+  showOnly(resultView);
+}
+
+function nextClueCard(s, remaining){
+  resultView.innerHTML = `
+    <div class="stamp">Solved!</div>
+    <div class="station">${s.department || 'Next station'}</div>
+    <div class="label">Your next clue</div>
+    <div class="clue">${s.clue || 'No clue has been added for this station yet.'}</div>
+    <div class="small" style="text-align:center;margin-top:14px"><b style="color:var(--paper)">${remaining}</b> station${remaining===1?'':'s'} left to find.</div>`;
+  showOnly(resultView);
+}
+
+/* =====================================================
+   SHARED ENGINE — identical across every station page
+===================================================== */
+
+const teamId = savedTeam();
+if (!teamId) {
+  document.title = STATION_TITLE;
+  message('Please register first', 'Go back to the join page and pick your department, then come back and scan this QR again.');
+} else {
+  footer.textContent = `TEAM ${teamId.toUpperCase()} · ${STATION_ID.toUpperCase()}`;
+  runEngine();
+}
+
+function runEngine(){
+  showOnly(loadingView);
+
+  db.ref('winner').once('value').then(wSnap => {
+    const w = wSnap.val();
+    if (w) {
+      if (w.team === teamId) message('You won! 🏆', 'Your team already finished first.');
+      else message('Game Over', `${w.team} already finished first. Thanks for playing!`);
+      return;
+    }
+
+    db.ref('teams/' + teamId).once('value').then(snap => {
+      const team = snap.val();
+      if (!team || team.order === 'PENDING') {
+        message('Not registered yet', 'Please register on the join page first.');
+        return;
+      }
+      if (team.finishedAt) {
+        message('Hunt complete!', 'Your team already found every station.');
+        return;
+      }
+      if (team.order[team.currentIndex] !== STATION_ID) {
+        body.classList.add('wrong');
+        showOnly(wrongView);
+        return;
+      }
+
+      // Correct station — pre-fetch the NEXT target's clue now so it's
+      // ready instantly the moment the puzzle is solved.
+      const expectedIndex = team.currentIndex;
+      const total = team.order.length;
+      const nextStationId = team.order[expectedIndex + 1]; // undefined if this was the last one
+
+      const preFetch = nextStationId
+        ? db.ref('stations/' + nextStationId).once('value').then(s => s.val() || {})
+        : Promise.resolve(null);
+
+      preFetch.then(nextStationData => {
+        showOnly(gameView);
+        startGame(() => onSolved(expectedIndex, total, nextStationData));
+      });
+    }).catch(err => {
+      console.error(err);
+      message('Signal lost', 'Could not reach base. Check your connection and try again.');
+    });
+  }).catch(err => {
+    console.error(err);
+    message('Signal lost', 'Could not reach base. Check your connection and try again.');
+  });
+}
+
+function onSolved(expectedIndex, total, nextStationData){
+  showOnly(loadingView);
+  db.ref('teams/' + teamId + '/currentIndex').transaction(current => {
+    if (current !== expectedIndex) return;
+    return expectedIndex + 1;
+  }).then(result => {
+    if (!result.committed) {
+      message('Already recorded', 'Looks like this was already logged. Head to base camp to check your progress.');
+      return;
+    }
+    const newIndex = result.snapshot.val();
+    const finished = newIndex >= total;
+
+    const finishWrite = finished
+      ? db.ref('teams/' + teamId + '/finishedAt').set(firebase.database.ServerValue.TIMESTAMP)
+      : Promise.resolve();
+
+    finishWrite.then(() => {
+      if (!finished) {
+        nextClueCard(nextStationData || {}, total - newIndex);
+        return;
+      }
+      // Try to claim the win — only the first team to reach here succeeds.
+      db.ref('winner').set({ team: teamId, finishedAt: firebase.database.ServerValue.TIMESTAMP })
+        .then(() => message('You won! 🏆', 'First team to finish! Head to base to claim it.'))
+        .catch(() => message('Hunt complete!', 'You found every station — someone else finished just before you.'));
+    });
+  }).catch(err => {
+    console.error(err);
+    message('Signal lost', 'Could not record this checkpoint. Please reload and try again.');
+  });
+}
+
+/* =====================================================
+   MINI-GAME: Sliding Number Puzzle — swap this whole
+   block out for a different game on other station pages.
+===================================================== */
+function startGame(onWin){
+  const SIZE = 3;
+  const BLANK = 0;
+  let board; // array of 9, 0 = blank
+
+  function solvedBoard(){
+    return [1,2,3,4,5,6,7,8,0];
+  }
+
+  function isSolvable(b){
+    const arr = b.filter(n => n !== 0);
+    let inversions = 0;
+    for (let i = 0; i < arr.length; i++)
+      for (let j = i + 1; j < arr.length; j++)
+        if (arr[i] > arr[j]) inversions++;
+    return inversions % 2 === 0;
+  }
+
+  function shuffledBoard(){
+    let b;
+    do {
+      b = solvedBoard().slice();
+      for (let i = b.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [b[i], b[j]] = [b[j], b[i]];
+      }
+    } while (!isSolvable(b) || b.every((v, i) => v === solvedBoard()[i]));
+    return b;
+  }
+
+  const grid = document.getElementById('grid');
+  const movesEl = document.getElementById('moves');
+  let moves = 0;
+
+  board = shuffledBoard();
+  render();
+
+  function render(){
+    grid.innerHTML = '';
+    board.forEach((val, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'slide-tile' + (val === BLANK ? ' blank' : '');
+      tile.textContent = val === BLANK ? '' : val;
+      tile.addEventListener('click', () => tryMove(i));
+      grid.appendChild(tile);
+    });
+  }
+
+  function tryMove(i){
+    const blankIndex = board.indexOf(BLANK);
+    const row = Math.floor(i / SIZE), col = i % SIZE;
+    const blankRow = Math.floor(blankIndex / SIZE), blankCol = blankIndex % SIZE;
+    const adjacent = (Math.abs(row - blankRow) + Math.abs(col - blankCol)) === 1;
+    if (!adjacent) return;
+
+    [board[i], board[blankIndex]] = [board[blankIndex], board[i]];
+    moves++;
+    movesEl.textContent = `${moves} move${moves === 1 ? '' : 's'}`;
+    render();
+
+    if (board.every((v, idx) => v === solvedBoard()[idx])) {
+      setTimeout(onWin, 300);
+    }
+  }
+}
+</script>
+</body>
+</html>

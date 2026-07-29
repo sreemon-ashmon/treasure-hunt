@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Field Dispatch — Join the Hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#161f1a;--ink2:#1f2b23;--paper:#e9e3d0;--dim:#cfc7ab;--amber:#e8a33d;--rust:#b8492f;--gold:#f4c95d;--line:rgba(233,227,208,.14)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 15% -10%,rgba(232,163,61,.1),transparent 45%),var(--ink);color:var(--paper);font-family:Inter,sans-serif;display:flex;justify-content:center;padding:24px}
+.frame{width:100%;max-width:440px}.eyebrow{font:600 11px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.eyebrow:before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:8px;box-shadow:0 0 0 3px rgba(232,163,61,.18)}
+h1{font:700 27px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:14px;line-height:1.5;margin-bottom:22px}
+.card{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:24px;position:relative;overflow:hidden}
+.card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,var(--amber) 0 10px,transparent 10px 20px);opacity:.55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team{background:var(--ink);border:1.5px solid var(--line);color:var(--paper);font:700 15px 'Space Grotesk';padding:16px 10px;border-radius:10px;cursor:pointer;text-transform:capitalize}
+.team:hover{border-color:var(--amber)}.team:disabled{opacity:.45;cursor:default}
+.loading,.center{text-align:center;padding:22px 4px}.big{font:700 21px 'Space Grotesk';margin-bottom:8px}.small{color:var(--dim);font-size:13px;line-height:1.6}
+.stamp{display:inline-block;font:700 13px 'Space Grotesk';letter-spacing:.06em;text-transform:uppercase;color:var(--amber);border:2px solid var(--amber);padding:4px 10px;border-radius:6px;transform:rotate(-3deg);margin-bottom:16px}
+.station{font:700 23px 'Space Grotesk';margin-bottom:14px}.label{font:600 11px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.clue{background:var(--ink);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:6px;padding:14px 16px;font-size:15px;line-height:1.55;margin-bottom:18px;white-space:pre-wrap}
+.hidden{display:none}
+footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
+.notice{background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.25);border-radius:8px;padding:12px;margin-top:14px;font-size:12px;line-height:1.5;color:var(--dim)}
+.trophy{background:rgba(244,201,93,.1);border:1px solid rgba(244,201,93,.4);border-radius:10px;padding:16px;margin-top:16px;text-align:center}
+.trophy b{color:var(--gold);text-transform:capitalize}
+</style>
+</head>
+<body id="body">
+<div class="frame">
+<div class="eyebrow">Field Dispatch</div>
+<h1 id="title">Join the Hunt</h1>
+<div class="sub" id="sub">Tap your department. This registers your phone as that team — you won't be asked again.</div>
+<div class="card">
+<div id="teamView" class="hidden"><div class="grid" id="teamGrid"></div>
+<div class="notice">After selecting your team, keep this phone with your group — it's the only one that needs to scan station QRs.</div></div>
+<div id="loadingView" class="hidden loading"><div class="big">Reading signal…</div><div class="small">Connecting to base.</div></div>
+<div id="resultView" class="hidden"></div>
+</div>
+<footer id="footer"></footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
+  authDomain: "treasure-hunt-fae61.firebaseapp.com",
+  databaseURL: "https://treasure-hunt-fae61-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "treasure-hunt-fae61",
+  storageBucket: "treasure-hunt-fae61.firebasestorage.app",
+  messagingSenderId: "561518091730",
+  appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const teamView = document.getElementById('teamView'), teamGrid = document.getElementById('teamGrid');
+const loadingView = document.getElementById('loadingView'), resultView = document.getElementById('resultView');
+const title = document.getElementById('title'), sub = document.getElementById('sub'), footer = document.getElementById('footer');
+
+function show(el){ [teamView, loadingView, resultView].forEach(x => x.classList.add('hidden')); el.classList.remove('hidden'); }
+function savedTeam(){ return localStorage.getItem('fieldDispatchTeam'); }
+function saveTeam(id){ localStorage.setItem('fieldDispatchTeam', id); }
+
+function message(big, small){
+  resultView.innerHTML = `<div class="center"><div class="big">${big}</div><div class="small">${small}</div></div>`;
+  show(resultView);
+}
+
+function firstTargetCard(s, remaining){
+  resultView.innerHTML = `
+    <div class="stamp">You're In</div>
+    <div class="station">${s.department || 'Station'}</div>
+    <div class="label">Go find this station</div>
+    <div class="clue">Solve its mini-game on arrival to unlock your next clue.</div>
+    <div class="small" style="text-align:center">${remaining} stations total. Good luck!</div>`;
+  show(resultView);
+}
+
+// If the hunt is already over, nobody should be able to keep playing —
+// check this before anything else, on every load of this page.
+function checkGameOver(){
+  return db.ref('winner').once('value').then(snap => {
+    const w = snap.val();
+    if(!w) return false;
+    const mine = savedTeam();
+    if(mine && w.team === mine){
+      message('You won! 🏆', 'Your team finished first. Head to base to claim it.');
+    } else {
+      message('Game Over', `${w.team} already finished first. Thanks for playing!`);
+    }
+    return true;
+  });
+}
+
+function renderTeams(){
+  title.textContent = 'Join the Hunt';
+  sub.textContent = 'Tap your department.';
+  db.ref('teamNames').once('value').then(snap => {
+    const names = snap.val() || [];
+    teamGrid.innerHTML = names.map(n => `<button class="team" data-team="${n}">${n}</button>`).join('');
+    teamGrid.querySelectorAll('.team').forEach(b => b.onclick = () => registerTeam(b.dataset.team));
+    show(teamView);
+  }).catch(() => message('Signal lost', 'Could not load the department list. Please try again.'));
+}
+
+function registerTeam(teamId){
+  teamGrid.querySelectorAll('.team').forEach(b => b.disabled = true);
+  show(loadingView);
+  const ref = db.ref('teams/' + teamId);
+  let created = false;
+
+  ref.transaction(existing => {
+    created = false;
+    if (existing) return existing;
+    created = true;
+    return { name: teamId, currentIndex: 0, startedAt: firebase.database.ServerValue.TIMESTAMP, order: 'PENDING' };
+  }).then(() => {
+    saveTeam(teamId);
+    if (!created) { showCurrentTarget(); return; }
+
+    let popped = null;
+    return db.ref('orderPool').transaction(pool => {
+      popped = null;
+      if (!pool) return pool;
+      const keys = Object.keys(pool);
+      if (!keys.length) return pool;
+      const key = keys[0];
+      popped = pool[key];
+      const rest = { ...pool };
+      delete rest[key];
+      return rest;
+    }).then(() => {
+      if (!popped) { message('Full up', 'All routes have already been assigned. Please check with base.'); return; }
+      return ref.update({ order: popped }).then(showCurrentTarget);
+    });
+  }).catch(err => {
+    console.error(err);
+    message('Signal lost', 'Please reconnect and try selecting your department again.');
+  });
+}
+
+function showCurrentTarget(){
+  const teamId = savedTeam();
+  footer.textContent = `TEAM ${teamId.toUpperCase()}`;
+  show(loadingView);
+
+  checkGameOver().then(over => {
+    if (over) return;
+
+    db.ref('teams/' + teamId).once('value').then(snap => {
+      const team = snap.val();
+      if (!team) { localStorage.removeItem('fieldDispatchTeam'); renderTeams(); return; }
+      if (team.order === 'PENDING') { setTimeout(showCurrentTarget, 400); return; }
+
+      if (team.finishedAt) {
+        message('Hunt complete!', 'Your team already found every station.');
+        return;
+      }
+
+      const nextStation = team.order[team.currentIndex];
+      const remaining = team.order.length - team.currentIndex;
+      db.ref('stations/' + nextStation).once('value').then(sSnap => {
+        firstTargetCard(sSnap.val() || {}, remaining);
+      });
+    }).catch(err => {
+      console.error(err);
+      message('Signal lost', 'Could not reach base. Check your connection and try again.');
+    });
+  });
+}
+
+const existing = savedTeam();
+if (existing) { showCurrentTarget(); } else { renderTeams(); }
+</script>
+</body>
+</html>

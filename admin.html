@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field Dispatch — Base Camp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#161f1a;--ink2:#1f2b23;--paper:#e9e3d0;--dim:#9aa79c;--amber:#e8a33d;--gold:#f4c95d;--line:rgba(233,227,208,.14)}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:var(--paper);font-family:Inter,sans-serif;padding:28px 20px 60px}.wrap{max-width:1000px;margin:auto}
+.top{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}h1{font:700 25px 'Space Grotesk';margin:0 0 4px}.sub{color:var(--dim);font:500 12px 'IBM Plex Mono'}.live{font:600 11px 'IBM Plex Mono';color:var(--amber);white-space:nowrap}
+.winner-banner{display:none;background:linear-gradient(135deg, rgba(244,201,93,.16), rgba(244,201,93,.05));border:1px solid rgba(244,201,93,.5);border-radius:14px;padding:20px 22px;margin-bottom:22px;align-items:center;gap:14px}
+.winner-banner.show{display:flex}
+.winner-banner .emoji{font-size:34px}
+.winner-banner .txt b{display:block;font:700 20px 'Space Grotesk';color:var(--gold);text-transform:capitalize}
+.winner-banner .txt span{color:var(--dim);font:500 12px 'IBM Plex Mono'}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}.stat{background:var(--ink2);border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{display:block;font:700 22px 'Space Grotesk';margin-bottom:4px}.stat span{color:var(--dim);font:500 10px 'IBM Plex Mono';text-transform:uppercase;letter-spacing:.08em}
+table{width:100%;border-collapse:collapse}th{text-align:left;font:600 11px 'IBM Plex Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--amber);padding:0 12px 10px;border-bottom:1px solid var(--line)}td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}tr:hover td{background:rgba(233,227,208,.03)}
+.team{font:700 15px 'Space Grotesk';text-transform:capitalize}.id{font:500 11px 'IBM Plex Mono';color:var(--dim);margin-top:3px}.pill{display:inline-block;font:600 10px 'IBM Plex Mono';padding:4px 9px;border-radius:99px;border:1px solid var(--line)}
+.finished{color:var(--ink);background:var(--amber);border-color:var(--amber)}.winnerpill{color:var(--ink);background:var(--gold);border-color:var(--gold)}.progress{color:var(--paper)}.notstarted{color:var(--dim);opacity:.65}.bar{width:170px;height:7px;background:var(--ink2);border:1px solid var(--line);border-radius:5px;overflow:hidden}.fill{height:100%;background:var(--amber)}.mono{font:500 11px 'IBM Plex Mono';color:var(--dim)}.empty{text-align:center;padding:60px 0;color:var(--dim);font:500 12px 'IBM Plex Mono'}
+@media(max-width:700px){body{padding:20px 12px}.top{align-items:start;flex-direction:column;gap:8px}.stats{grid-template-columns:1fr 1fr}th,td{padding:10px 6px}.bar{width:100px}.hide-mobile{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div><h1>Base Camp Dashboard</h1><div class="sub" id="status">Connecting to Firebase…</div></div><div class="live">● LIVE</div></div>
+
+<div class="winner-banner" id="winnerBanner">
+  <div class="emoji">🏆</div>
+  <div class="txt"><b id="winnerName">—</b><span id="winnerTime"></span></div>
+</div>
+
+<div class="stats">
+<div class="stat"><b id="total">0</b><span>Teams</span></div>
+<div class="stat"><b id="started">0</b><span>Started</span></div>
+<div class="stat"><b id="finished">0</b><span>Finished</span></div>
+<div class="stat"><b id="active">0</b><span>In Progress</span></div>
+</div>
+<table><thead><tr><th>Team</th><th>Status</th><th>Progress</th><th>Started</th><th class="hide-mobile">Finished</th></tr></thead><tbody id="rows"></tbody></table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
+  authDomain: "treasure-hunt-fae61.firebaseapp.com",
+  databaseURL: "https://treasure-hunt-fae61-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "treasure-hunt-fae61",
+  storageBucket: "treasure-hunt-fae61.firebasestorage.app",
+  messagingSenderId: "561518091730",
+  appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database(),rows=document.getElementById('rows'),status=document.getElementById('status');
+
+function time(ts){
+  if(!ts)return '—';
+  return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+db.ref('winner').on('value', snap => {
+  const w = snap.val();
+  const banner = document.getElementById('winnerBanner');
+  if(w){
+    banner.classList.add('show');
+    document.getElementById('winnerName').textContent = w.team + ' wins!';
+    document.getElementById('winnerTime').textContent = 'Finished at ' + time(w.finishedAt);
+  } else {
+    banner.classList.remove('show');
+  }
+});
+
+db.ref('teams').on('value',snap=>{
+  const teams=snap.val()||{},ids=Object.keys(teams).sort((a,b)=>a.localeCompare(b));
+  let started=0,finished=0,active=0;
+  ids.forEach(id=>{
+    const t=teams[id]||{};
+    if(t.startedAt)started++;
+    if(t.finishedAt)finished++;
+    else if(t.startedAt)active++;
+  });
+
+  document.getElementById('total').textContent=ids.length;
+  document.getElementById('started').textContent=started;
+  document.getElementById('finished').textContent=finished;
+  document.getElementById('active').textContent=active;
+  status.textContent=`Live · ${ids.length} team${ids.length===1?'':'s'} · updates automatically`;
+
+  if(!ids.length){
+    rows.innerHTML='<tr><td colspan="5"><div class="empty">No teams have checked in yet.</div></td></tr>';
+    return;
+  }
+
+  db.ref('winner').once('value').then(wSnap => {
+    const winnerTeam = (wSnap.val() || {}).team;
+
+    rows.innerHTML=ids.map(id=>{
+      const t=teams[id]||{};
+      const total=Array.isArray(t.order)?t.order.length:10;
+      const done=Math.min(Number(t.currentIndex)||0,total);
+      const pct=total?Math.round(done/total*100):0;
+      let pill='';
+      if(id===winnerTeam)pill='<span class="pill winnerpill">🏆 Winner</span>';
+      else if(t.finishedAt)pill='<span class="pill finished">Finished</span>';
+      else if(t.startedAt)pill='<span class="pill progress">In progress</span>';
+      else pill='<span class="pill notstarted">Not started</span>';
+
+      return `<tr>
+        <td><div class="team">${t.name||id}</div><div class="id">${id}</div></td>
+        <td>${pill}</td>
+        <td><div class="bar"><div class="fill" style="width:${pct}%"></div></div><div class="mono">${done} / ${total} · ${pct}%</div></td>
+        <td class="mono">${time(t.startedAt)}</td>
+        <td class="mono hide-mobile">${time(t.finishedAt)}</td>
+      </tr>`;
+    }).join('');
+  });
+},err=>{
+  console.error(err);
+  status.textContent='Unable to read team data';
+});
+</script>
+</body>
+</html>
