@@ -1,0 +1,60 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #0f1117; color: #f2f2f2; font-family: 'Segoe UI', Arial, sans-serif;
+  padding: 20px;
+}
+
+#gate {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+  width: 100%;
+  border-radius: 12px;
+  padding: 32px 20px;
+  background: #1a1c26;
+  transition: background 0.2s;
+}
+#gate.wrong {
+  background: #4a0f14;
+}
+#gate h2 { font-size: 1.4rem; margin-bottom: 10px; }
+#gate p { color: #d9b9bb; max-width: 320px; }
+#gate.wrong h2 { color: #ff6b6b; }
+
+#game { display: none; flex-direction: column; align-items: center; }
+#game h1 { font-size: 1.2rem; margin-bottom: 4px; }
+#game p.sub { color: #9a9aad; margin-top: 0; margin-bottom: 18px; font-size: 0.85rem; }
+
+#puzzle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: min(85vw, 380px);
+  height: min(85vw, 380px);
+  gap: 2px;
+  background: #000;
+  border: 3px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.tile { background-size: 300% 300%; cursor: pointer; }
+.tile.blank { background: #16171f; cursor: default; }
+#puzzle-status { margin-top: 14px; color: #9a9aad; font-size: 0.9rem; }
+
+#clue-box {
+  display: none;
+  max-width: min(90vw, 400px);
+  background: linear-gradient(135deg, #ffcf5c, #ff9a3c);
+  color: #2a1a00;
+  padding: 24px;
+  border-radius: 10px;
+  text-align: center;
+  white-space: pre-line;
+}
+#clue-box h2 { margin: 0 0 8px 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
+#clue-box p { margin: 0; font-size: 1.1rem; font-weight: 600; line-height: 1.5; }
