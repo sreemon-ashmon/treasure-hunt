@@ -2,206 +2,174 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Field Dispatch — Treasure Hunt</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treasure Hunt — Team Login</title>
 <style>
-:root{--ink:#161f1a;--ink2:#1f2b23;--paper:#e9e3d0;--dim:#cfc7ab;--amber:#e8a33d;--rust:#b8492f;--line:rgba(233,227,208,.14)}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%}
-body{background:radial-gradient(circle at 15% -10%,rgba(232,163,61,.1),transparent 45%),var(--ink);color:var(--paper);font-family:Inter,sans-serif;display:flex;justify-content:center;padding:24px;transition:.2s}
-body.flash{background:var(--rust)}
-.frame{width:100%;max-width:440px}.eyebrow{font:600 11px 'IBM Plex Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
-.eyebrow:before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-right:8px;box-shadow:0 0 0 3px rgba(232,163,61,.18)}
-h1{font:700 27px 'Space Grotesk';margin:0 0 5px}.sub{color:var(--dim);font-size:14px;line-height:1.5;margin-bottom:22px}
-.card{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:24px;position:relative;overflow:hidden}
-.card:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,var(--amber) 0 10px,transparent 10px 20px);opacity:.55}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team{background:var(--ink);border:1.5px solid var(--line);color:var(--paper);font:700 15px 'Space Grotesk';padding:16px 10px;border-radius:10px;cursor:pointer;text-transform:capitalize}
-.team:hover{border-color:var(--amber)}.team:disabled{opacity:.45;cursor:default}
-.loading,.center{text-align:center;padding:22px 4px}.big{font:700 21px 'Space Grotesk';margin-bottom:8px}.small{color:var(--dim);font-size:13px;line-height:1.6}
-.stamp{display:inline-block;font:700 13px 'Space Grotesk';letter-spacing:.06em;text-transform:uppercase;color:var(--amber);border:2px solid var(--amber);padding:4px 10px;border-radius:6px;transform:rotate(-3deg);margin-bottom:16px}
-.station{font:700 23px 'Space Grotesk';margin-bottom:14px}.label{font:600 11px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
-.clue{background:var(--ink);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:6px;padding:14px 16px;font-size:15px;line-height:1.55;margin-bottom:18px;white-space:pre-wrap}
-.site{display:flex;justify-content:center;align-items:center;background:transparent;border:1.5px solid var(--amber);color:var(--amber);text-decoration:none;font:700 14px 'Space Grotesk';padding:12px;border-radius:8px;margin-bottom:18px}
-.progress{font:500 12px 'IBM Plex Mono';color:var(--dim);text-align:center}.progress b{color:var(--paper)}.hidden{display:none}
-footer{text-align:center;font:500 11px 'IBM Plex Mono';color:#5c7a67;margin-top:18px;letter-spacing:.04em}
-.notice{background:rgba(232,163,61,.08);border:1px solid rgba(232,163,61,.25);border-radius:8px;padding:12px;margin-top:14px;font-size:12px;line-height:1.5;color:var(--dim)}
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0f1117;
+    color: #f2f2f2;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 24px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; text-align: center; }
+  p.sub { color: #9a9aad; margin-top: 0; margin-bottom: 28px; text-align: center; font-size: 0.9rem; }
+  .depts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: min(100%, 360px);
+  }
+  .dept-btn {
+    padding: 18px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #1a1c26;
+    color: #f2f2f2;
+    font-size: 1.05rem;
+    cursor: pointer;
+    text-align: left;
+    transition: 0.15s;
+  }
+  .dept-btn:hover { border-color: #ffcf5c; background: #22242f; }
+  .dept-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #status {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #9a9aad;
+    max-width: 360px;
+  }
+  .confirm-box {
+    display: none;
+    margin-top: 20px;
+    background: linear-gradient(135deg, #ffcf5c, #ff9a3c);
+    color: #2a1a00;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 360px;
+  }
+  .confirm-box h2 { margin: 0 0 6px 0; font-size: 1.1rem; }
+  .confirm-box p { margin: 0; font-size: 0.95rem; }
 </style>
 </head>
-<body id="body">
-<div class="frame">
-<div class="eyebrow">Field Dispatch</div>
-<h1 id="title">Check In</h1>
-<div class="sub" id="sub">Select your department once.</div>
-<div class="card">
-<div id="teamView" class="hidden"><div class="grid" id="teamGrid"></div>
-<div class="notice">After selecting your team, you may close this page. Use the same phone to scan every station QR.</div></div>
-<div id="loadingView" class="hidden loading"><div class="big">Reading signal…</div><div class="small">Connecting to base.</div></div>
-<div id="resultView" class="hidden"></div>
-</div>
-<footer id="footer"></footer>
+<body>
+
+<h1>Campus Treasure Hunt</h1>
+<p class="sub">Select your department team to begin</p>
+
+<div class="depts" id="dept-list">
+  <button class="dept-btn" data-dept="Psychology">Psychology</button>
+  <button class="dept-btn" data-dept="English">English</button>
+  <button class="dept-btn" data-dept="Commerce">Commerce</button>
+  <button class="dept-btn" data-dept="Biotechnology">Biotechnology</button>
+  <button class="dept-btn" data-dept="Biochemistry">Biochemistry</button>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<div id="status"></div>
+
+<div class="confirm-box" id="confirm-box">
+  <h2>You're in, <span id="confirm-dept"></span>!</h2>
+  <p>Head to the <strong>START</strong> QR code and scan it to begin the hunt.</p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAVDpAofaZ05ji_SPYul7_NzChzXl5lg0c",
-  authDomain: "treasure-hunt-fae61.firebaseapp.com",
-  databaseURL: "https://treasure-hunt-fae61-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "treasure-hunt-fae61",
-  storageBucket: "treasure-hunt-fae61.firebasestorage.app",
-  messagingSenderId: "561518091730",
-  appId: "1:561518091730:web:b903ef5206fc3ec2e47c0b"
-};
+  const statusEl = document.getElementById('status');
+  const confirmBox = document.getElementById('confirm-box');
+  const confirmDept = document.getElementById('confirm-dept');
+  const buttons = document.querySelectorAll('.dept-btn');
 
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-const params=new URLSearchParams(location.search);
-const stationParam=params.get('station');
-
-const body=document.getElementById('body');
-const teamView=document.getElementById('teamView'), teamGrid=document.getElementById('teamGrid');
-const loadingView=document.getElementById('loadingView'), resultView=document.getElementById('resultView');
-const title=document.getElementById('title'), sub=document.getElementById('sub'), footer=document.getElementById('footer');
-
-function show(el){[teamView,loadingView,resultView].forEach(x=>x.classList.add('hidden'));el.classList.remove('hidden')}
-function savedTeam(){return localStorage.getItem('fieldDispatchTeam')}
-function saveTeam(id){localStorage.setItem('fieldDispatchTeam',id)}
-
-function message(big,small){
-  resultView.innerHTML=`<div class="center"><div class="big">${big}</div><div class="small">${small}</div></div>`;
-  show(resultView);
-}
-
-function stationCard(s,remaining,finished){
-  resultView.innerHTML=`
-    <div class="stamp">Checked In</div>
-    <div class="station">${s.department||'Station'}</div>
-    <div class="label">Your clue</div>
-    <div class="clue">${s.clue||'No clue has been added for this station yet.'}</div>
-    ${s.siteUrl?`<a class="site" href="${s.siteUrl}" target="_blank" rel="noopener">Open the site ↗</a>`:''}
-    <div class="progress">${finished?'<b>All stations complete.</b> Head back to base.':`<b>${remaining}</b> station${remaining===1?'':'s'} left to find.`}</div>`;
-  show(resultView);
-}
-
-function flashWrong(){
-  body.classList.add('flash');
-  setTimeout(()=>{body.classList.remove('flash');route()},700);
-}
-
-// The shared order is identical for every team — fetch it once and cache it.
-let ORDER=null;
-function getOrder(){
-  if(ORDER)return Promise.resolve(ORDER);
-  return db.ref('order').once('value').then(snap=>{
-    ORDER=snap.val()||[];
-    return ORDER;
-  });
-}
-
-function renderTeams(){
-  title.textContent='Join the Hunt';
-  sub.textContent='Tap your department.';
-  db.ref('teamNames').once('value').then(snap=>{
-    const names=snap.val()||[];
-    teamGrid.innerHTML=names.map(n=>`<button class="team" data-team="${n}">${n}</button>`).join('');
-    teamGrid.querySelectorAll('.team').forEach(b=>b.onclick=()=>registerTeam(b.dataset.team));
-    show(teamView);
-  }).catch(()=>message('Signal lost','Could not load the department list. Please try again.'));
-}
-
-function registerTeam(teamId){
-  teamGrid.querySelectorAll('.team').forEach(b=>b.disabled=true);
-  show(loadingView);
-  const ref=db.ref('teams/'+teamId);
-
-  ref.transaction(existing=>{
-    if(existing)return existing; // no-op — someone already claimed this name
-    return {name:teamId,currentIndex:0,startedAt:firebase.database.ServerValue.TIMESTAMP};
-  }).then(()=>{
-    saveTeam(teamId);
-    route();
-  }).catch(err=>{
-    console.error(err);
-    message('Signal lost','Please reconnect and try selecting your department again.');
-  });
-}
-
-function route(){
-  const teamId=savedTeam();
-  if(!teamId){renderTeams();return}
-
-  footer.textContent=`TEAM ${teamId.toUpperCase()}`;
-  show(loadingView);
-
-  Promise.all([
-    db.ref('teams/'+teamId).once('value'),
-    getOrder()
-  ]).then(([snap,order])=>{
-    const team=snap.val();
-    if(!team){localStorage.removeItem('fieldDispatchTeam');renderTeams();return}
-
-    if(!stationParam){
-      title.textContent='Base Camp';
-      sub.textContent='Here\u2019s where to go next.';
-      if(team.finishedAt){message('Hunt complete!','Nice work. Return to base.');return}
-      const nextStation=order[team.currentIndex];
-      const remaining=Math.max(0,order.length-team.currentIndex);
-      db.ref('stations/'+nextStation).once('value').then(sSnap=>{
-        stationCard(sSnap.val()||{}, remaining, false);
-      });
-      return;
-    }
-
-    if(stationParam==='finish'){handleFinish(teamId,team,order);return}
-    title.textContent='Checking In…';sub.textContent='';
-    footer.textContent=`TEAM ${teamId.toUpperCase()} · ${stationParam.toUpperCase()}`;
-    handleCheckpoint(teamId,team,order,stationParam);
-  }).catch(err=>{
-    console.error(err);
-    message('Signal lost','Could not reach base. Check your connection and try again.');
-  });
-}
-
-function handleFinish(teamId,team,order){
-  const remaining=order.length-team.currentIndex;
-  if(remaining>0){message('Not yet',`${remaining} station${remaining===1?'':'s'} left.`);return}
-  if(team.finishedAt){message('Already finished','Nice work. Return to base.');return}
-  db.ref('teams/'+teamId+'/finishedAt').set(firebase.database.ServerValue.TIMESTAMP)
-    .then(()=>message('Finished! 🎉','Your time has been recorded. Return to base.'))
-    .catch(()=>message('Signal lost','Could not record your finish. Please try again.'));
-}
-
-function handleCheckpoint(teamId,team,order,station){
-  if(team.finishedAt||order[team.currentIndex]!==station){
-    flashWrong();return;
+  // If this device already has a team assigned, skip straight to confirmation
+  const existingTeam = localStorage.getItem('qrhunt_team');
+  if (existingTeam) {
+    document.getElementById('dept-list').style.display = 'none';
+    confirmDept.textContent = existingTeam;
+    confirmBox.style.display = 'block';
   }
 
-  const expected=team.currentIndex,total=order.length;
-  db.ref('teams/'+teamId+'/currentIndex').transaction(current=>{
-    if(current!==expected)return;
-    return expected+1;
-  }).then(result=>{
-    if(!result.committed){flashWrong();return}
-    const newIndex=result.snapshot.val(),finished=newIndex>=total;
-    const finishWrite=finished?db.ref('teams/'+teamId+'/finishedAt').set(firebase.database.ServerValue.TIMESTAMP):Promise.resolve();
-    return finishWrite.then(()=>{
-      if(finished){
-        message('All stations found! 🎉','Head to the Finish QR to record your time.');
-        return;
-      }
-      const nextStation=order[newIndex];
-      return db.ref('stations/'+nextStation).once('value')
-        .then(snap=>stationCard(snap.val()||{}, total-newIndex, false));
-    });
-  }).catch(err=>{
-    console.error(err);
-    message('Signal lost','Could not record this checkpoint. Please scan again.');
-  });
-}
+  function generateToken() {
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
 
-route();
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dept = btn.dataset.dept;
+      buttons.forEach(b => b.disabled = true);
+      statusEl.textContent = 'Setting up your team...';
+
+      const teamRef = db.ref('teams/' + dept);
+
+      teamRef.get().then(snapshot => {
+        if (snapshot.exists()) {
+          // Team already created by a teammate's phone — just join it
+          const data = snapshot.val();
+          localStorage.setItem('qrhunt_team', dept);
+          localStorage.setItem('qrhunt_secret', data.secretToken);
+          statusEl.textContent = '';
+          document.getElementById('dept-list').style.display = 'none';
+          confirmDept.textContent = dept;
+          confirmBox.style.display = 'block';
+          return;
+        }
+
+        // Claim the first unused order pool via a transaction (race-safe)
+        const poolsRef = db.ref('orderPools');
+        poolsRef.get().then(poolsSnap => {
+          const pools = poolsSnap.val();
+          const availableKey = Object.keys(pools).find(k => pools[k].used === false);
+
+          if (!availableKey) {
+            statusEl.textContent = 'No available team slots left. Contact an organizer.';
+            buttons.forEach(b => b.disabled = false);
+            return;
+          }
+
+          // Lock the pool first (transaction avoids two teams grabbing the same one)
+          db.ref('orderPools/' + availableKey + '/used').transaction(current => {
+            if (current === false) return true;
+            return; // abort if already taken
+          }).then(result => {
+            if (!result.committed) {
+              statusEl.textContent = 'That slot was just taken — tap your department again.';
+              buttons.forEach(b => b.disabled = false);
+              return;
+            }
+
+            const secretToken = generateToken();
+            const order = pools[availableKey].sequence;
+
+            teamRef.set({
+              department: dept,
+              order: order,
+              currentIndex: 0,
+              secretToken: secretToken,
+              poolUsed: availableKey,
+              startedAt: null,
+              finishedAt: null
+            }).then(() => {
+              localStorage.setItem('qrhunt_team', dept);
+              localStorage.setItem('qrhunt_secret', secretToken);
+              statusEl.textContent = '';
+              document.getElementById('dept-list').style.display = 'none';
+              confirmDept.textContent = dept;
+              confirmBox.style.display = 'block';
+            });
+          });
+        });
+      });
+    });
+  });
 </script>
+
 </body>
 </html>
